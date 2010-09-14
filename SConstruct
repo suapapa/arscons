@@ -40,7 +40,7 @@ UPLOAD_PORT	= ARGUMENTS.get('port', '/dev/ttyUSB0')
 MCU		= ARGUMENTS.get('mcu', 'atmega168')
 RST_TRIGGER	= ARGUMENTS.get('rst', './pulsedtr.py')
 
-ARDUINO_VER	= 18 # Arduino 0018
+ARDUINO_VER	= 19 # Arduino 0019
 AVR_PREFIX	= 'avr-'
 
 ARDUINO_CORE	= ARDUINO_HOME+'hardware/arduino/cores/arduino/'
@@ -54,13 +54,15 @@ F_CPU = int(16e6) #16M
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
 
+cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
+    '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
+    '-Os', '-mmcu=%s'%MCU]
 envArduino = Environment(CC = AVR_PREFIX+'gcc',
     CXX = AVR_PREFIX+'g++',
     CPPPATH = ['core'],
     CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
-    CCFLAGS = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
-        '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
-        '-Os','-std=gnu99','-mmcu=%s'%MCU]
+    CFLAGS = cFlags+['-std=gnu99'],
+    CCFLAGS = cFlags
     )
 
 def fnProcessing(target, source, env):
@@ -125,14 +127,11 @@ envArduino.Hex(TARGET+'.hex', TARGET+'.elf')
 # Print Size
 envArduino.Command(None, TARGET+'.hex', 'avr-size --target=ihex $SOURCE')
 
-# Upload
-AVRDUDE_FLAGS = '-V -F ' #-C /etc/avrdude.conf'
-AVRDUDE_FLAGS += '-c stk500v1 -b 19200 '
-AVRDUDE_FLAGS += '-p %s '%MCU
-AVRDUDE_FLAGS += '-P %s '%UPLOAD_PORT
-AVRDUDE_WRITE_FLASH = '-U flash:w:$SOURCES'
+# Upload #-C /etc/avrdude.conf'
 reset_cmd = '%s %s'%(RST_TRIGGER, UPLOAD_PORT)
-fuse_cmd = 'avrdude %s %s'%(AVRDUDE_FLAGS,AVRDUDE_WRITE_FLASH)
+avrdudeOpts = ['-V', '-F', '-c stk500v1', '-b 19200',
+    '-p %s'%MCU, '-P %s'%UPLOAD_PORT, '-U flash:w:$SOURCES']
+fuse_cmd = 'avrdude %s'%(' '.join(avrdudeOpts))
 upload_cmd = ';'.join([reset_cmd, fuse_cmd])
 upload = envArduino.Alias('upload', TARGET+'.hex', upload_cmd);
 AlwaysBuild(upload)
