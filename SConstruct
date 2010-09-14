@@ -35,7 +35,7 @@ import re
 import os
 pathJoin = os.path.join
 
-ARDUINO_HOME	= ARGUMENTS.get('arduino', '/usr/share/arduino/') #'~/apps/arduino-0018/'
+ARDUINO_HOME	= ARGUMENTS.get('arduino', '/usr/share/arduino/') #'/apps/arduino-0018/'
 UPLOAD_PORT	= ARGUMENTS.get('port', '/dev/ttyUSB0')
 MCU		= ARGUMENTS.get('mcu', 'atmega168')
 RST_TRIGGER	= ARGUMENTS.get('rst', './pulsedtr.py')
@@ -46,7 +46,8 @@ AVR_PREFIX	= 'avr-'
 ARDUINO_CORE	= ARDUINO_HOME+'hardware/arduino/cores/arduino/'
 ARDUINO_SKEL	= ARDUINO_CORE+'main.cpp'
 ARDUINO_LIBS	= ARDUINO_HOME+'libraries/'
-#ARDUINO_LIBS	+= '~/arduino_libs/'
+# Can add more library-directory in another -not under ARDUINO_HOME- path.
+#ARDUINO_LIBS	+= '/apps/arduino_libs/'
 
 F_CPU = int(16e6) #16M
 
