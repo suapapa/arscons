@@ -31,25 +31,52 @@
 #     $ scons port=/dev/ttyS0 upload
 
 from glob import glob
+import sys
 import re
 import os
 pathJoin = os.path.join
 
 ARDUINO_HOME	= ARGUMENTS.get('arduino', '/usr/share/arduino/') #'/apps/arduino-0018/'
 UPLOAD_PORT	= ARGUMENTS.get('port', '/dev/ttyUSB0')
-MCU		= ARGUMENTS.get('mcu', 'atmega168')
+BOARD		= ARGUMENTS.get('board', 'atmega328')
 RST_TRIGGER	= ARGUMENTS.get('rst', './pulsedtr.py')
 
+# TODO: find arduino ver dynamically
 ARDUINO_VER	= 19 # Arduino 0019
 AVR_PREFIX	= 'avr-'
 
 ARDUINO_CORE	= ARDUINO_HOME+'hardware/arduino/cores/arduino/'
 ARDUINO_SKEL	= ARDUINO_CORE+'main.cpp'
+ARDUINO_CONF	= ARDUINO_HOME+'hardware/arduino/boards.txt'
 ARDUINO_LIBS	= ARDUINO_HOME+'libraries/'
 # Can add more library-directory in another -not under ARDUINO_HOME- path.
 #ARDUINO_LIBS	+= '/apps/arduino_libs/'
 
-F_CPU = int(16e6) #16M
+# check given board name, BOARD is valid one
+ptnBoard = re.compile(r'^(.*)\.name=(.*)')
+boards = {}
+for line in open(ARDUINO_CONF):
+    result = ptnBoard.findall(line)
+    if result:
+        boards[result[0][0]] = result[0][1]
+if not BOARD in boards.keys():
+    print ("ERR! given boardname, %s is not in supported board list."%BOARD)
+    print ("all available boardname is following:")
+    for name in boards.keys():
+        print ("\t%s\t for %s"%(name, boards[name]))
+    print ("maybe, you want edit %s for add new board."%ARDUINO_CONF)
+    sys.exit(-1)
+
+def getBoardConf(strPtn):
+    ptn = re.compile(strPtn)
+    for line in open(ARDUINO_CONF):
+        result = ptn.findall(line)
+        if result:
+            return result[0]
+    assert(False)
+
+MCU = getBoardConf(r'^%s\.build\.mcu=(.*)'%BOARD)
+F_CPU = getBoardConf(r'^%s\.build\.f_cpu=(.*)'%BOARD)
 
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
@@ -91,9 +118,9 @@ core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'core/'), core_sources)
 
 # add libraries
 libCandidates = []
-libPtn = re.compile(r'#include <(.*)\.h>')
+ptnLib = re.compile(r'#include <(.*)\.h>')
 for line in open (TARGET+'.pde'):
-    result = libPtn.findall(line)
+    result = ptnLib.findall(line)
     if result:
         libCandidates += result
 
@@ -125,11 +152,17 @@ envArduino.Elf(TARGET+'.elf', objs)
 envArduino.Hex(TARGET+'.hex', TARGET+'.elf')
 
 # Print Size
+# TODO: check binary size
+MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)'%BOARD)
+
 envArduino.Command(None, TARGET+'.hex', 'avr-size --target=ihex $SOURCE')
 
-# Upload #-C /etc/avrdude.conf'
+# Upload 
+UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)'%BOARD)
+UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)'%BOARD)
+
 reset_cmd = '%s %s'%(RST_TRIGGER, UPLOAD_PORT)
-avrdudeOpts = ['-V', '-F', '-c stk500v1', '-b 19200',
+avrdudeOpts = ['-V', '-F', '-c %s'%UPLOAD_PROTOCOL, '-b %s'%UPLOAD_SPEED,
     '-p %s'%MCU, '-P %s'%UPLOAD_PORT, '-U flash:w:$SOURCES']
 fuse_cmd = 'avrdude %s'%(' '.join(avrdudeOpts))
 upload_cmd = ';'.join([reset_cmd, fuse_cmd])
