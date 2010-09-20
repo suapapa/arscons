@@ -39,7 +39,8 @@ pathJoin = os.path.join
 ARDUINO_HOME	= ARGUMENTS.get('arduino', '/usr/share/arduino/') #'/apps/arduino-0018/'
 UPLOAD_PORT	= ARGUMENTS.get('port', '/dev/ttyUSB0')
 BOARD		= ARGUMENTS.get('board', 'atmega328')
-RST_TRIGGER	= ARGUMENTS.get('rst', './pulsedtr.py')
+#RST_TRIGGER	= ARGUMENTS.get('rst', './pulsedtr.py')
+RST_TRIGGER	= ARGUMENTS.get('rst', '')
 
 # TODO: find arduino ver dynamically
 ARDUINO_VER	= 19 # Arduino 0019
@@ -157,16 +158,30 @@ MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)'%BOARD)
 
 envArduino.Command(None, TARGET+'.hex', 'avr-size --target=ihex $SOURCE')
 
+# Reset
+def pulseDTR(target, source, env):
+    import serial
+    import time
+    ser = serial.Serial(UPLOAD_PORT)
+    ser.setDTR(1)
+    time.sleep(0.5)
+    ser.setDTR(0)
+    ser.close()
+
+if RST_TRIGGER:
+    reset_cmd = '%s %s'%(RST_TRIGGER, UPLOAD_PORT)
+else:
+    reset_cmd = pulseDTR
+
 # Upload 
 UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)'%BOARD)
 UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)'%BOARD)
 
-reset_cmd = '%s %s'%(RST_TRIGGER, UPLOAD_PORT)
 avrdudeOpts = ['-V', '-F', '-c %s'%UPLOAD_PROTOCOL, '-b %s'%UPLOAD_SPEED,
     '-p %s'%MCU, '-P %s'%UPLOAD_PORT, '-U flash:w:$SOURCES']
 fuse_cmd = 'avrdude %s'%(' '.join(avrdudeOpts))
-upload_cmd = ';'.join([reset_cmd, fuse_cmd])
-upload = envArduino.Alias('upload', TARGET+'.hex', upload_cmd);
+
+upload = envArduino.Alias('upload', TARGET+'.hex', [reset_cmd, fuse_cmd]);
 AlwaysBuild(upload)
 
 # vim: et sw=4 fenc=utf-8:
