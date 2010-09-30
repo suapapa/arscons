@@ -1,12 +1,13 @@
 #!/usr/bin/python
 
 # scons script for the Arduino sketch
+# http://code.google.com/p/arscons/
 #
 # Copyright (C) 2010 by Homin Lee <ff4500@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 
 # You'll need the serial module: http://pypi.python.org/pypi/pyserial
@@ -20,8 +21,8 @@
 #     $ scons upload
 
 # Thanks to:
-# * Mac port
-#     - Ovidiu Predescu <ovidiu@gmail.com>, Lee Pike <leepike@gmail.com>
+# * Ovidiu Predescu <ovidiu@gmail.com> and Lee Pike <leepike@gmail.com>
+#     for Mac port and bugfix.
 
 from glob import glob
 import sys
@@ -47,7 +48,7 @@ elif platform == 'winnt':
     assert(False) # not supported.. yet.
 else:
     # For Ubuntu Linux (9.10 or higher)
-    ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/apps/arduino-0018/'
+    ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-0018/'
     ARDUINO_PORT_DEFAULT = '/dev/ttyUSB0'
     AVR_BIN_PREFIX = 'avr-'
     AVRDUDE_CONF = None
