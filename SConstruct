@@ -14,7 +14,7 @@
 
 # Basic Usage:
 # 1. make a folder which have same name of the sketch (ex. Blink/ for Blik.pde)
-# 2. put the sketch, SConstruct(this file) and pulsedtr.py under the folder.
+# 2. put the sketch and SConstruct(this file) under the folder.
 # 3. to make the HEX. do following in the folder.
 #     $ scons
 # 4. to upload the binary, do following in the folder.
@@ -23,7 +23,19 @@
 # Thanks to:
 # * Ovidiu Predescu <ovidiu@gmail.com> and Lee Pike <leepike@gmail.com>
 #     for Mac port and bugfix.
-
+#
+# This script tries to determine the port to which you have an Arduino
+# attached. If multiple USB serial devices are attached to your
+# computer, you'll need to explicitly specify the port to use, like
+# this:
+#
+# $ scons ARDUINO_PORT=/dev/ttyUSB0
+#
+# To add your own directory containing user libraries, pass EXTRA_LIB
+# to scons, like this:
+#
+# $ scons EXTRA_LIB=<my-extra-library-dir>
+#
 from glob import glob
 import sys
 import re
@@ -33,36 +45,44 @@ pathJoin = os.path.join
 env = Environment()
 platform = env['PLATFORM']
 
+def getUsbTty(rx):
+    usb_ttys = glob(rx)
+    if len(usb_ttys) == 1: return usb_ttys[0]
+    else: return None
+
+AVR_BIN_PREFIX = None
+AVRDUDE_CONF = None
+
 if platform == 'darwin':
     # For MacOS X, pick up the AVR tools from within Arduino.app
     ARDUINO_HOME_DEFAULT = '/Applications/Arduino.app/Contents/Resources/Java'
-    ARDUINO_PORT_DEFAULT = '/dev/cu.usbserial-A7007xQB'
-    AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
-    AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/', 'avrdude.conf')
+    ARDUINO_PORT_DEFAULT = getUsbTty('/dev/tty.usbserial*')
 elif platform == 'winnt': 
     # TODO: add Windows port.
+    assert(False) # not supported.. yet.
     ARDUINO_HOME_DEFAULT = None
     ARDUINO_PORT_DEFAULT = None
-    AVR_BIN_PREFIX = None
-    AVRDUDE_CONF = None
-    assert(False) # not supported.. yet.
 else:
     # For Ubuntu Linux (9.10 or higher)
     ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-0018/'
-    ARDUINO_PORT_DEFAULT = '/dev/ttyUSB0'
+    ARDUINO_PORT_DEFAULT = getUsbTty('/dev/ttyUSB*')
     AVR_BIN_PREFIX = 'avr-'
-    AVRDUDE_CONF = None
 
 ARDUINO_HOME	= ARGUMENTS.get('ARDUINO_HOME', ARDUINO_HOME_DEFAULT)
 ARDUINO_PORT	= ARGUMENTS.get('ARDUINO_PORT', ARDUINO_PORT_DEFAULT)
 ARDUINO_BOARD	= ARGUMENTS.get('ARDUINO_BOARD', 'atmega328')
 ARDUINO_VER	= ARGUMENTS.get('ARDUINO_VER', 20) # Arduino 0020
 RST_TRIGGER	= ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
-EXTRA_LIB	= ARGUMENTS.get('EXTRA_LIB', None) # handy for add another arduino-lib dir
+EXTRA_LIB	= ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 
 ARDUINO_CORE	= pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
 ARDUINO_SKEL	= pathJoin(ARDUINO_CORE, 'main.cpp')
 ARDUINO_CONF	= pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
+
+# Some OSs need bundle with IDE tool-chain
+if platform == 'darwin' or platform == 'winnt': 
+    AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
+    AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
 ARDUINO_LIBS	= []
 if EXTRA_LIB != None:
