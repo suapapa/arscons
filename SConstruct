@@ -128,7 +128,6 @@ envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++',
 
 def fnProcessing(target, source, env):
     wp = open ('%s'%target[0], 'w')
-    #wp.write('#include "WProgram.h"\n')
     wp.write(open(ARDUINO_SKEL).read())
     # Add this preprocessor directive to localize the errors.
     wp.write('#line 1 "%s"\r\n' % source[0])
@@ -179,7 +178,7 @@ for orig_lib_dir in ARDUINO_LIBS:
         lib_sources = gatherSources(libPath)
         utilDir = pathJoin(libPath, 'utility')
         if os.path.exists(utilDir) and os.path.isdir(utilDir):
-            lib_sources = gatherSources(utilDir)
+            lib_sources += gatherSources(utilDir)
             envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
         lib_sources = map(lambda x: x.replace(orig_lib_dir, lib_dir), lib_sources)
         all_libs_sources += lib_sources
