@@ -192,7 +192,8 @@ VariantDir('build', '.')
 sources = ['build/'+TARGET+'.cpp']
 sources += all_libs_sources
 sources += core_sources
-sources += gatherSources('.')
+# Add raw sources which live in sketch dir.
+# sources += gatherSources('.')
 
 # Finally Build!!
 objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
