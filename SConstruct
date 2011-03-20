@@ -57,34 +57,39 @@ if platform == 'darwin':
     # For MacOS X, pick up the AVR tools from within Arduino.app
     ARDUINO_HOME_DEFAULT = '/Applications/Arduino.app/Contents/Resources/Java'
     ARDUINO_PORT_DEFAULT = getUsbTty('/dev/tty.usbserial*')
-elif platform == 'winnt': 
-    # TODO: add Windows port.
-    assert(False) # not supported.. yet.
-    ARDUINO_HOME_DEFAULT = None
-    ARDUINO_PORT_DEFAULT = None
+elif platform == 'win32':
+    # For Windows, use environment variables.
+    ARDUINO_HOME_DEFAULT = os.environ.get('ARDUINO_HOME')
+    ARDUINO_PORT_DEFAULT = os.environ.get('ARDUINO_PORT')
 else:
     # For Ubuntu Linux (9.10 or higher)
-    ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-0018/'
+    ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-00XX/'
     ARDUINO_PORT_DEFAULT = getUsbTty('/dev/ttyUSB*')
     AVR_BIN_PREFIX = 'avr-'
 
-ARDUINO_HOME	= ARGUMENTS.get('ARDUINO_HOME', ARDUINO_HOME_DEFAULT)
-ARDUINO_PORT	= ARGUMENTS.get('ARDUINO_PORT', ARDUINO_PORT_DEFAULT)
-ARDUINO_BOARD	= ARGUMENTS.get('ARDUINO_BOARD', 'atmega328')
-ARDUINO_VER	= ARGUMENTS.get('ARDUINO_VER', 20) # Arduino 0020
-RST_TRIGGER	= ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
-EXTRA_LIB	= ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
+ARDUINO_BOARD_DEFAULT = os.environ.get('ARDUINO_BOARD', 'atmega328')
 
-ARDUINO_CORE	= pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
-ARDUINO_SKEL	= pathJoin(ARDUINO_CORE, 'main.cpp')
-ARDUINO_CONF	= pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
+ARDUINO_HOME    = ARGUMENTS.get('ARDUINO_HOME', ARDUINO_HOME_DEFAULT)
+ARDUINO_PORT    = ARGUMENTS.get('ARDUINO_PORT', ARDUINO_PORT_DEFAULT)
+ARDUINO_BOARD   = ARGUMENTS.get('ARDUINO_BOARD', ARDUINO_BOARD_DEFAULT)
+ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 22) # Arduino 0022
+RST_TRIGGER     = ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
+EXTRA_LIB       = ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
+
+if not ARDUINO_HOME or not ARDUINO_PORT:
+    print 'ARDUINO_HOME and ARDUINO_PORT must be defined.'
+    raise KeyError('ARDUINO_HOME' if not ARDUINO_HOME else 'ARDUINO_PORT')
+
+ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
+ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
+ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 
 # Some OSs need bundle with IDE tool-chain
-if platform == 'darwin' or platform == 'winnt': 
+if platform == 'darwin' or platform == 'win32': 
     AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
     AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
-ARDUINO_LIBS	= []
+ARDUINO_LIBS = []
 if EXTRA_LIB != None:
     ARDUINO_LIBS += [EXTRA_LIB]
 ARDUINO_LIBS += [pathJoin(ARDUINO_HOME, 'libraries')]
@@ -124,13 +129,14 @@ cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
     '-Os', '-mmcu=%s'%MCU]
 envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++',
     CPPPATH = ['build/core'], CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
-    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags)
+    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags, TOOLS = ['gcc','g++'])
 
 def fnProcessing(target, source, env):
-    wp = open ('%s'%target[0], 'w')
+    wp = open ('%s'%target[0], 'wb')
     wp.write(open(ARDUINO_SKEL).read())
     # Add this preprocessor directive to localize the errors.
-    wp.write('#line 1 "%s"\r\n' % source[0])
+    sourcePath = str(source[0]).replace('\\', '\\\\');
+    wp.write('#line 1 "%s"\r\n' % sourcePath)
     wp.write(open('%s'%source[0]).read())
     wp.close()
     return None
