@@ -76,9 +76,9 @@ ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 22) # Arduino 0022
 RST_TRIGGER     = ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
 EXTRA_LIB       = ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 
-if not ARDUINO_HOME or not ARDUINO_PORT:
-    print 'ARDUINO_HOME and ARDUINO_PORT must be defined.'
-    raise KeyError('ARDUINO_HOME' if not ARDUINO_HOME else 'ARDUINO_PORT')
+if not ARDUINO_HOME:
+    print 'ARDUINO_HOME must be defined.'
+    raise KeyError('ARDUINO_HOME')
 
 ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
 ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
