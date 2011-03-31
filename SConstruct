@@ -159,7 +159,7 @@ core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_source
 
 # add libraries
 libCandidates = []
-ptnLib = re.compile(r'^[ ]*#[ ]*include <(.*)\.h>')
+ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open (TARGET+'.pde'):
     result = ptnLib.findall(line)
     if result:
