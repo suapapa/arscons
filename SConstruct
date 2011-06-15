@@ -181,7 +181,7 @@ for orig_lib_dir in ARDUINO_LIBS:
         if not libName in libCandidates:
             continue
         envArduino.Append(CPPPATH = libPath.replace(orig_lib_dir, lib_dir))
-        lib_sources += gatherSources(libPath)
+        lib_sources = gatherSources(libPath)
         utilDir = pathJoin(libPath, 'utility')
         if os.path.exists(utilDir) and os.path.isdir(utilDir):
             lib_sources += gatherSources(utilDir)
