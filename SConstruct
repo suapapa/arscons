@@ -163,7 +163,13 @@ ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open (TARGET+'.pde'):
     result = ptnLib.findall(line)
     if result:
-        libCandidates += result
+        # Look for the library directory that contains the header.
+        filename=result[0]+'.h'
+        for libdir in ARDUINO_LIBS:
+            for root, dirs, files in os.walk(libdir):
+                for f in files:
+                    if f == filename:
+                        libCandidates += [os.path.basename(root)]
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
