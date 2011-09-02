@@ -118,7 +118,9 @@ def getBoardConf(strPtn):
     assert(False)
 
 MCU = getBoardConf(r'^%s\.build\.mcu=(.*)'%ARDUINO_BOARD)
+MCU = ARGUMENTS.get('MCU', MCU)
 F_CPU = getBoardConf(r'^%s\.build\.f_cpu=(.*)'%ARDUINO_BOARD)
+F_CPU = ARGUMENTS.get('F_CPU', F_CPU)
 
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
