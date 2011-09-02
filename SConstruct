@@ -134,12 +134,43 @@ envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++',
 def fnProcessing(target, source, env):
     wp = open ('%s'%target[0], 'wb')
     wp.write(open(ARDUINO_SKEL).read())
+
+    types='''void 
+    int char word long 
+    float double byte long
+    boolean 
+    uint8_t uint16_t uint32_t 
+    int8_t int16_t int32_t
+    '''
+    types=' | '.join(types.split())
+    re_signature=re.compile(r"""^\s* (
+        (?: (%s) \s+ )?
+        \w+ \s*
+        \( \s* ((%s) \s+ \*? \w+ (?:\s*,\s*)? )* \)
+        ) \s* {? \s* $""" % (types,types), re.MULTILINE|re.VERBOSE)
+
+    prototypes = {}
+
+    for file in glob(os.path.realpath(os.curdir) + "/*.pde"):
+        for line in open(file):
+            result = re_signature.findall(line)
+            if result:
+                prototypes[result[0][0]] = result[0][1]
+
+    for name in prototypes.keys():
+        print ("%s;"%(name))
+        wp.write("%s;\n"%name)
+
+    for file in glob(os.path.realpath(os.curdir) + "/*.pde"):
+        print file, TARGET
+        if not os.path.samefile(file, TARGET+".pde"):
+                wp.write('#line 1 "%s"\r\n' % file)
+                wp.write(open(file).read())
+
     # Add this preprocessor directive to localize the errors.
     sourcePath = str(source[0]).replace('\\', '\\\\');
     wp.write('#line 1 "%s"\r\n' % sourcePath)
     wp.write(open('%s'%source[0]).read())
-    wp.close()
-    return None
 
 envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
         suffix = '.cpp', src_suffix = '.pde')})
@@ -235,6 +266,10 @@ else:
 # Upload
 UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)'%ARDUINO_BOARD)
 UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)'%ARDUINO_BOARD)
+
+if UPLOAD_PROTOCOL == 'stk500':
+    UPLOAD_PROTOCOL = 'stk500v1'
+
 
 avrdudeOpts = ['-V', '-F', '-c %s'%UPLOAD_PROTOCOL, '-b %s'%UPLOAD_SPEED,
     '-p %s'%MCU, '-P %s'%ARDUINO_PORT, '-U flash:w:$SOURCES']
