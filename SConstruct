@@ -57,15 +57,18 @@ if platform == 'darwin':
     # For MacOS X, pick up the AVR tools from within Arduino.app
     ARDUINO_HOME_DEFAULT = '/Applications/Arduino.app/Contents/Resources/Java'
     ARDUINO_PORT_DEFAULT = getUsbTty('/dev/tty.usbserial*')
+    SKETCHBOOK_HOME_DEFAULT = ''
 elif platform == 'win32':
     # For Windows, use environment variables.
     ARDUINO_HOME_DEFAULT = os.environ.get('ARDUINO_HOME')
     ARDUINO_PORT_DEFAULT = os.environ.get('ARDUINO_PORT')
+    SKETCHBOOK_HOME_DEFAULT = ''
 else:
     # For Ubuntu Linux (9.10 or higher)
     ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-00XX/'
     ARDUINO_PORT_DEFAULT = getUsbTty('/dev/ttyUSB*')
     AVR_BIN_PREFIX = 'avr-'
+    SKETCHBOOK_HOME_DEFAULT = os.path.realpath('~/share/arduino/sketchbook/')
 
 ARDUINO_BOARD_DEFAULT = os.environ.get('ARDUINO_BOARD', 'atmega328')
 
@@ -75,6 +78,7 @@ ARDUINO_BOARD   = ARGUMENTS.get('ARDUINO_BOARD', ARDUINO_BOARD_DEFAULT)
 ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 22) # Arduino 0022
 RST_TRIGGER     = ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
 EXTRA_LIB       = ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
+SKETCHBOOK_HOME = ARGUMENTS.get('SKETCHBOOK_HOME', SKETCHBOOK_HOME_DEFAULT) # If set will add the libraries dir from the sketchbook
 
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
@@ -89,10 +93,11 @@ if platform == 'darwin' or platform == 'win32':
     AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
     AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
-ARDUINO_LIBS = []
-if EXTRA_LIB != None:
+ARDUINO_LIBS = [pathJoin(ARDUINO_HOME, 'libraries')]
+if EXTRA_LIB:
     ARDUINO_LIBS += [EXTRA_LIB]
-ARDUINO_LIBS += [pathJoin(ARDUINO_HOME, 'libraries')]
+if SKETCHBOOK_HOME:
+    ARDUINO_LIBS += [pathJoin(SKETCHBOOK_HOME, 'libraries')]
 
 # check given board name, ARDUINO_BOARD is valid one
 ptnBoard = re.compile(r'^(.*)\.name=(.*)')
