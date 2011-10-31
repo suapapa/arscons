@@ -181,11 +181,12 @@ envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
 envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
         '-O ihex -R .eeprom $SOURCES $TARGET')})
 
-# add arduino core sources
-VariantDir('build/core', ARDUINO_CORE)
 gatherSources = lambda x: glob(pathJoin(x, '*.c'))+\
         glob(pathJoin(x, '*.cpp'))+\
         glob(pathJoin(x, '*.S'))
+
+# add arduino core sources
+VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
 core_sources = filter(lambda x: not (os.path.basename(x) == 'main.cpp'), core_sources)
 core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_sources)
@@ -229,15 +230,22 @@ for orig_lib_dir in ARDUINO_LIBS:
         all_libs_sources += lib_sources
     index += 1
 
+# Add raw sources which live in sketch dir.
+build_top = os.path.realpath('.')
+VariantDir('build/local/', build_top)
+local_sources = gatherSources(build_top)
+local_sources = map(lambda x: x.replace(build_top, 'build/local/'), local_sources)
+if local_sources:
+    envArduino.Append(CPPPATH = 'build/local')
+
 # Convert sketch(.pde) to cpp
 envArduino.Processing('build/'+TARGET+'.cpp', 'build/'+TARGET+'.pde')
 VariantDir('build', '.')
 
 sources = ['build/'+TARGET+'.cpp']
-sources += all_libs_sources
 sources += core_sources
-# Add raw sources which live in sketch dir.
-# sources += gatherSources('.')
+sources += local_sources
+sources += all_libs_sources
 
 # Finally Build!!
 objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
