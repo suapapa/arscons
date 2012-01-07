@@ -100,6 +100,9 @@ if ARDUINO_VER == 0:
 else:
         print "Arduino version " + ARDUINO_VER + " specified"
 
+if ARDUINO_VER < 100: FILE_EXTENSION = ".pde"
+if ARDUINO_VER >= 100: FILE_EXTENSION = ".ino"
+
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32': 
     AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
@@ -141,7 +144,7 @@ F_CPU = ARGUMENTS.get('F_CPU', F_CPU)
 
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
-assert(os.path.exists(TARGET+'.pde'))
+assert(os.path.exists(TARGET+FILE_EXTENSION))
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
     '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
@@ -177,7 +180,7 @@ def fnProcessing(target, source, env):
 
     prototypes = {}
 
-    for file in glob(os.path.realpath(os.curdir) + "/*.pde"):
+    for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         for line in open(file):
             result = re_signature.findall(line)
             if result:
@@ -187,9 +190,9 @@ def fnProcessing(target, source, env):
         print ("%s;"%(name))
         wp.write("%s;\n"%name)
 
-    for file in glob(os.path.realpath(os.curdir) + "/*.pde"):
+    for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         print file, TARGET
-        if not os.path.samefile(file, TARGET+".pde"):
+        if not os.path.samefile(file, TARGET+FILE_EXTENSION):
                 wp.write('#line 1 "%s"\r\n' % file)
                 wp.write(open(file).read())
 
@@ -199,7 +202,7 @@ def fnProcessing(target, source, env):
     wp.write(open('%s'%source[0]).read())
 
 envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
-        suffix = '.cpp', src_suffix = '.pde')})
+        suffix = '.cpp', src_suffix = FILE_EXTENSION)})
 envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
         '-mmcu=%s -Os -Wl,--gc-sections -o $TARGET $SOURCES -lm'%MCU)})
 envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
@@ -218,7 +221,7 @@ core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_source
 # add libraries
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
-for line in open (TARGET+'.pde'):
+for line in open (TARGET+FILE_EXTENSION):
     result = ptnLib.findall(line)
     if result:
         # Look for the library directory that contains the header.
@@ -263,7 +266,7 @@ if local_sources:
     envArduino.Append(CPPPATH = 'build/local')
 
 # Convert sketch(.pde) to cpp
-envArduino.Processing('build/'+TARGET+'.cpp', 'build/'+TARGET+'.pde')
+envArduino.Processing('build/'+TARGET+'.cpp', 'build/'+TARGET+FILE_EXTENSION)
 VariantDir('build', '.')
 
 sources = ['build/'+TARGET+'.cpp']
