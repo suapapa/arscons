@@ -75,7 +75,7 @@ ARDUINO_BOARD_DEFAULT = os.environ.get('ARDUINO_BOARD', 'atmega328')
 ARDUINO_HOME    = ARGUMENTS.get('ARDUINO_HOME', ARDUINO_HOME_DEFAULT)
 ARDUINO_PORT    = ARGUMENTS.get('ARDUINO_PORT', ARDUINO_PORT_DEFAULT)
 ARDUINO_BOARD   = ARGUMENTS.get('ARDUINO_BOARD', ARDUINO_BOARD_DEFAULT)
-ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 22) # Arduino 0022
+ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 0) # Default to 0 if nothing is specified
 RST_TRIGGER     = ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
 EXTRA_LIB       = ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 SKETCHBOOK_HOME = ARGUMENTS.get('SKETCHBOOK_HOME', SKETCHBOOK_HOME_DEFAULT) # If set will add the libraries dir from the sketchbook
@@ -87,6 +87,18 @@ if not ARDUINO_HOME:
 ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
 ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
 ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
+
+arduino_file_path = pathJoin(ARDUINO_CORE, 'Arduino.h')
+if ARDUINO_VER == 0:
+        print "No Arduino version specified. Discovered version",
+        if os.path.exists(arduino_file_path): 
+                print "100 or above"
+                ARDUINO_VER = 100
+        else:   
+                print "0023 or below"
+                ARDUINO_VER = 23
+else:
+        print "Arduino version " + ARDUINO_VER + " specified"
 
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32': 
