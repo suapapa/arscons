@@ -152,11 +152,10 @@ envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++',
 
 if ARDUINO_VER >= 100:
         if ARDUINO_BOARD == 'nano328': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/eightanaloginputs/'))
-        if ARDUINO_BOARD == 'leonardo': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
-        if ARDUINO_BOARD == 'mega2560': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
-        if ARDUINO_BOARD == 'micro': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/micro/'))
-else:
-        envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/standard/'))
+        elif ARDUINO_BOARD == 'leonardo': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
+        elif ARDUINO_BOARD == 'mega2560': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
+        elif ARDUINO_BOARD == 'micro': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/micro/'))
+        else: envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/standard/'))
 
 def fnProcessing(target, source, env):
     wp = open ('%s'%target[0], 'wb')
