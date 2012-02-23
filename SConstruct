@@ -149,9 +149,11 @@ assert(os.path.exists(TARGET+FILE_EXTENSION))
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
     '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
     '-Os', '-mmcu=%s'%MCU]
-envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++',
+envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++', AS=AVR_BIN_PREFIX+'gcc',
     CPPPATH = ['build/core'], CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
-    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags, TOOLS = ['gcc','g++'])
+    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags, ASFLAGS=['-assembler-with-cpp','-mmcu=%s'%MCU],
+    TOOLS = ['gcc','g++', 'as'])
+
 
 if ARDUINO_VER >= 100:
         if ARDUINO_BOARD == 'nano328': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/eightanaloginputs/'))
@@ -159,6 +161,25 @@ if ARDUINO_VER >= 100:
         elif ARDUINO_BOARD == 'mega2560': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
         elif ARDUINO_BOARD == 'micro': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/micro/'))
         else: envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/standard/'))
+
+def run(cmd):
+    """Run a command and decipher the return code. Exit by default."""
+    import SCons.Script
+    print cmd
+    res = os.system(cmd)
+    # Assumes that if a process doesn't call exit, it was successful
+    if (os.WIFEXITED(res)):
+        code = os.WEXITSTATUS(res)
+        if code != 0:
+            print "Error: return code: " + str(code)
+            if SCons.Script.keep_going_on_error == 0:
+                sys.exit(code)
+
+def fnCompressCore(target, source, env):
+    core_files = filter(lambda x: str(x).startswith('build/core/'), source)
+    for file in core_files:
+        run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
+
 
 def fnProcessing(target, source, env):
     wp = open ('%s'%target[0], 'wb')
@@ -203,6 +224,7 @@ def fnProcessing(target, source, env):
 
 envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
         suffix = '.cpp', src_suffix = FILE_EXTENSION)})
+envArduino.Append(BUILDERS = {'CompressCore':Builder(action = fnCompressCore) })
 envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
         '-mmcu=%s -Os -Wl,--gc-sections -o $TARGET $SOURCES -lm'%MCU)})
 envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
@@ -227,7 +249,7 @@ for line in open (TARGET+FILE_EXTENSION):
         # Look for the library directory that contains the header.
         filename=result[0]+'.h'
         for libdir in ARDUINO_LIBS:
-            for root, dirs, files in os.walk(libdir):
+            for root, dirs, files in os.walk(libdir, followlinks=True):
                 for f in files:
                     if f == filename:
                         libCandidates += [os.path.basename(root)]
@@ -270,12 +292,14 @@ envArduino.Processing('build/'+TARGET+'.cpp', 'build/'+TARGET+FILE_EXTENSION)
 VariantDir('build', '.')
 
 sources = ['build/'+TARGET+'.cpp']
-sources += core_sources
+#sources += core_sources
 sources += local_sources
 sources += all_libs_sources
 
 # Finally Build!!
+core_objs = envArduino.Object(core_sources)
 objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
+objs = objs + envArduino.CompressCore('build/core.a', core_objs)
 envArduino.Elf(TARGET+'.elf', objs)
 envArduino.Hex(TARGET+'.hex', TARGET+'.elf')
 
