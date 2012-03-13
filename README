@@ -1,6 +1,7 @@
 Some fixes for Arduino v1.0, new boards, pin variants, .ino file extensions
 
-
+Stems from the original arscons at http://code.google.com/p/arscons/, but sadly this repository appears to have stagnated.
+A copy was made at http://code.google.com/r/kylecgordon-arscons/, and subsequent changes applied from various contributors as in the change history. That repository has subsequently been migrated to Github.
 
 * Tries to determine if you're using v1.0 or not. Uses original defaults if not
 
