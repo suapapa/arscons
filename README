@@ -1,0 +1,15 @@
+Some fixes for Arduino v1.0, new boards, pin variants, .ino file extensions
+
+
+
+* Tries to determine if you're using v1.0 or not. Uses original defaults if not
+
+* Uses .ino file extension for v1.0+ sketches
+
+* Includes relevant board variants if the appropriate ARDUINO_BOARD is specified
+
+* Uses the new location of pins_arduino.h 
+
+* Compresses the final .hex file
+
+* Inclusion of .S files
