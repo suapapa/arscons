@@ -259,7 +259,6 @@ if ARDUINO_VER >= 20 and 'Ethernet' in libCandidates:
 
 all_libs_sources = []
 for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
-    lib_sources = []
     lib_dir = 'build/lib_%02d'%index
     VariantDir(lib_dir, orig_lib_dir)
     for libPath in filter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
