@@ -91,15 +91,15 @@ ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 
 arduino_file_path = pathJoin(ARDUINO_CORE, 'Arduino.h')
 if ARDUINO_VER == 0:
-        print "No Arduino version specified. Discovered version",
-        if os.path.exists(arduino_file_path): 
-                print "100 or above"
-                ARDUINO_VER = 100
-        else:   
-                print "0023 or below"
-                ARDUINO_VER = 23
+    print "No Arduino version specified. Discovered version",
+    if os.path.exists(arduino_file_path):
+        print "100 or above"
+        ARDUINO_VER = 100
+    else:
+        print "0023 or below"
+        ARDUINO_VER = 23
 else:
-        print "Arduino version " + ARDUINO_VER + " specified"
+    print "Arduino version " + ARDUINO_VER + " specified"
 
 FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
 
@@ -210,8 +210,8 @@ def fnProcessing(target, source, env):
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         print file, TARGET
         if not os.path.samefile(file, TARGET+FILE_EXTENSION):
-                wp.write('#line 1 "%s"\r\n' % file)
-                wp.write(open(file).read())
+            wp.write('#line 1 "%s"\r\n' % file)
+            wp.write(open(file).read())
 
     # Add this preprocessor directive to localize the errors.
     sourcePath = str(source[0]).replace('\\', '\\\\')
