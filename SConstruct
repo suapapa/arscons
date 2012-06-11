@@ -229,9 +229,10 @@ envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
 envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
         '-O ihex -R .eeprom $SOURCES $TARGET')})
 
-gatherSources = lambda x: glob(pathJoin(x, '*.c'))+\
-        glob(pathJoin(x, '*.cpp'))+\
-        glob(pathJoin(x, '*.S'))
+SOURCE_RE = re.compile(r'\.(?:c(?:pp)?|S)$')
+def gatherSources(srcpath):
+    return [pathJoin(srcpath, f) for f
+            in os.listdir(srcpath) if SOURCE_RE.search(f)]
 
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
