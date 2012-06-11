@@ -178,7 +178,7 @@ def fnCompressCore(target, source, env):
 
 
 def fnProcessing(target, source, env):
-    wp = open (str(target[0]), 'wb')
+    wp = open(str(target[0]), 'wb')
     wp.write(open(ARDUINO_SKEL).read())
 
     types = '''void
@@ -240,7 +240,7 @@ core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x in core_sources
 # add libraries
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
-for line in open (TARGET + FILE_EXTENSION):
+for line in open(TARGET + FILE_EXTENSION):
     result = ptnLib.search(line)
     if result:
         # Look for the library directory that contains the header.
