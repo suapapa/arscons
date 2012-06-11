@@ -13,7 +13,7 @@
 # You'll need the serial module: http://pypi.python.org/pypi/pyserial
 
 # Basic Usage:
-# 1. make a folder which have same name of the sketch (ex. Blink/ for Blik.pde)
+# 1. make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
 # 2. put the sketch and SConstruct(this file) under the folder.
 # 3. to make the HEX. do following in the folder.
 #     $ scons
