@@ -47,8 +47,7 @@ platform = env['PLATFORM']
 
 def getUsbTty(rx):
     usb_ttys = glob(rx)
-    if len(usb_ttys) == 1: return usb_ttys[0]
-    else: return None
+    return usb_ttys[0] if len(usb_ttys) == 1 else None
 
 AVR_BIN_PREFIX = None
 AVRDUDE_CONF = None
