@@ -249,9 +249,8 @@ for line in open (TARGET+FILE_EXTENSION):
         filename = result.group(1) + '.h'
         for libdir in ARDUINO_LIBS:
             for root, dirs, files in os.walk(libdir, followlinks=True):
-                for f in files:
-                    if f == filename:
-                        libCandidates += [os.path.basename(root)]
+                if filename in files:
+                    libCandidates.append(os.path.basename(root))
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
