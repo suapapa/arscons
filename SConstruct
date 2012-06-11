@@ -164,14 +164,12 @@ if ARDUINO_VER >= 100:
 
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
-    import SCons.Script
     print ' '.join(cmd)
     try:
         check_call(cmd)
     except CalledProcessError as cpe:
         print "Error: return code: " + str(cpe.returncode)
-        if SCons.Script.keep_going_on_error == 0:
-            sys.exit(cpe.returncode)
+        sys.exit(cpe.returncode)
 
 def fnCompressCore(target, source, env):
     core_files = (x for x in imap(str, source) if x.startswith('build/core/'))
