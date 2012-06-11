@@ -271,8 +271,8 @@ for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
         if os.path.exists(utilDir) and os.path.isdir(utilDir):
             lib_sources += gatherSources(utilDir)
             envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
-        lib_sources = map(lambda x: x.replace(orig_lib_dir, lib_dir), lib_sources)
-        all_libs_sources += lib_sources
+        lib_sources = (x.replace(orig_lib_dir, lib_dir) for x in lib_sources)
+        all_libs_sources.extend(lib_sources)
 
 # Add raw sources which live in sketch dir.
 build_top = os.path.realpath('.')
