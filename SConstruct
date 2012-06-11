@@ -119,11 +119,11 @@ for line in open(ARDUINO_CONF):
     result = ptnBoard.findall(line)
     if result:
         boards[result[0][0]] = result[0][1]
-if not ARDUINO_BOARD in boards.keys():
+if ARDUINO_BOARD not in boards:
     print ("ERROR! the given board name, %s is not in the supported board list:"%ARDUINO_BOARD)
     print ("all available board names are:")
-    for name in boards.keys():
-        print ("\t%s for %s"%(name.ljust(14), boards[name]))
+    for name, description in boards.iteritems():
+        print ("\t%s for %s"%(name.ljust(14), description))
     print ("however, you may edit %s to add a new board."%ARDUINO_CONF)
     sys.exit(-1)
 
