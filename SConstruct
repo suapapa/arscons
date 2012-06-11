@@ -205,7 +205,7 @@ def fnProcessing(target, source, env):
             if result:
                 prototypes[result.group(1)] = result.group(2)
 
-    for name in prototypes.keys():
+    for name in prototypes.iterkeys():
         print ("%s;"%(name))
         wp.write("%s;\n"%name)
 
