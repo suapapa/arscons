@@ -122,11 +122,11 @@ for line in open(ARDUINO_CONF):
     if result:
         boards[result.group(1)] = result.group(2)
 if ARDUINO_BOARD not in boards:
-    print ("ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD)
-    print ("all available board names are:")
+    print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
+    print "all available board names are:"
     for name, description in boards.iteritems():
-        print ("\t%s for %s" % (name.ljust(14), description))
-    print ("however, you may edit %s to add a new board." % ARDUINO_CONF)
+        print "\t%s for %s" % (name.ljust(14), description)
+    print "however, you may edit %s to add a new board." % ARDUINO_CONF
     sys.exit(-1)
 
 def getBoardConf(strPtn):
@@ -204,7 +204,7 @@ def fnProcessing(target, source, env):
                 prototypes[result.group(1)] = result.group(2)
 
     for name in prototypes.iterkeys():
-        print ("%s;" % name)
+        print "%s;" % name
         wp.write("%s;\n" % name)
 
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
@@ -299,7 +299,7 @@ envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
 # Print Size
 # TODO: check binary size
 MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)' % ARDUINO_BOARD)
-print ("maximum size for hex file: %s bytes" % MAX_SIZE)
+print "maximum size for hex file: %s bytes" % MAX_SIZE
 envArduino.Command(None, TARGET + '.hex', AVR_BIN_PREFIX + 'size --target=ihex $SOURCE')
 
 # Reset
