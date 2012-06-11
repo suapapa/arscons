@@ -37,6 +37,7 @@
 # $ scons EXTRA_LIB=<my-extra-library-dir>
 #
 from glob import glob
+from itertools import ifilter
 import sys
 import re
 import os
@@ -261,7 +262,7 @@ all_libs_sources = []
 for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
     lib_dir = 'build/lib_%02d'%index
     VariantDir(lib_dir, orig_lib_dir)
-    for libPath in filter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
+    for libPath in ifilter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
         libName = os.path.basename(libPath)
         if not libName in libCandidates:
             continue
