@@ -180,7 +180,7 @@ def fnCompressCore(target, source, env):
 
 
 def fnProcessing(target, source, env):
-    wp = open ('%s'%target[0], 'wb')
+    wp = open (str(target[0]), 'wb')
     wp.write(open(ARDUINO_SKEL).read())
 
     types='''void 
@@ -218,7 +218,7 @@ def fnProcessing(target, source, env):
     # Add this preprocessor directive to localize the errors.
     sourcePath = str(source[0]).replace('\\', '\\\\')
     wp.write('#line 1 "%s"\r\n' % sourcePath)
-    wp.write(open('%s'%source[0]).read())
+    wp.write(open(str(source[0])).read())
 
 envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
         suffix = '.cpp', src_suffix = FILE_EXTENSION)})
