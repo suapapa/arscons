@@ -218,7 +218,7 @@ def fnProcessing(target, source, env):
                 wp.write(open(file).read())
 
     # Add this preprocessor directive to localize the errors.
-    sourcePath = str(source[0]).replace('\\', '\\\\');
+    sourcePath = str(source[0]).replace('\\', '\\\\')
     wp.write('#line 1 "%s"\r\n' % sourcePath)
     wp.write(open('%s'%source[0]).read())
 
@@ -340,7 +340,7 @@ if AVRDUDE_CONF:
 fuse_cmd = '%s %s'%(pathJoin(os.path.dirname(AVR_BIN_PREFIX), 'avrdude'),
                      ' '.join(avrdudeOpts))
 
-upload = envArduino.Alias('upload', TARGET+'.hex', [reset_cmd, fuse_cmd]);
+upload = envArduino.Alias('upload', TARGET+'.hex', [reset_cmd, fuse_cmd])
 AlwaysBuild(upload)
 
 # Clean build directory
