@@ -37,7 +37,8 @@
 # $ scons EXTRA_LIB=<my-extra-library-dir>
 #
 from glob import glob
-from itertools import ifilter
+from itertools import ifilter, imap
+from subprocess import check_call, CalledProcessError
 import sys
 import re
 import os
@@ -164,20 +165,18 @@ if ARDUINO_VER >= 100:
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
     import SCons.Script
-    print cmd
-    res = os.system(cmd)
-    # Assumes that if a process doesn't call exit, it was successful
-    if (os.WIFEXITED(res)):
-        code = os.WEXITSTATUS(res)
-        if code != 0:
-            print "Error: return code: " + str(code)
-            if SCons.Script.keep_going_on_error == 0:
-                sys.exit(code)
+    print ' '.join(cmd)
+    try:
+        check_call(cmd)
+    except CalledProcessError as cpe:
+        print "Error: return code: " + str(cpe.returncode)
+        if SCons.Script.keep_going_on_error == 0:
+            sys.exit(cpe.returncode)
 
 def fnCompressCore(target, source, env):
-    core_files = (x for x in source if str(x).startswith('build/core/'))
+    core_files = (x for x in imap(str, source) if x.startswith('build/core/'))
     for file in core_files:
-        run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
+        run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
 
 def fnProcessing(target, source, env):
