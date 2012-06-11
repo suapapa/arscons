@@ -175,7 +175,7 @@ def run(cmd):
                 sys.exit(code)
 
 def fnCompressCore(target, source, env):
-    core_files = filter(lambda x: str(x).startswith('build/core/'), source)
+    core_files = (x for x in source if str(x).startswith('build/core/'))
     for file in core_files:
         run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
 
