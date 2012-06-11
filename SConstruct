@@ -235,8 +235,8 @@ gatherSources = lambda x: glob(pathJoin(x, '*.c'))+\
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
-core_sources = filter(lambda x: not (os.path.basename(x) == 'main.cpp'), core_sources)
-core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_sources)
+core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x in core_sources
+        if os.path.basename(x) != 'main.cpp']
 
 # add libraries
 libCandidates = []
@@ -281,7 +281,7 @@ for orig_lib_dir in ARDUINO_LIBS:
 build_top = os.path.realpath('.')
 VariantDir('build/local/', build_top)
 local_sources = gatherSources(build_top)
-local_sources = map(lambda x: x.replace(build_top, 'build/local/'), local_sources)
+local_sources = [x.replace(build_top, 'build/local/') for x in local_sources]
 if local_sources:
     envArduino.Append(CPPPATH = 'build/local')
 
