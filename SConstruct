@@ -108,9 +108,9 @@ if platform == 'darwin' or platform == 'win32':
 
 ARDUINO_LIBS = [pathJoin(ARDUINO_HOME, 'libraries')]
 if EXTRA_LIB:
-    ARDUINO_LIBS += [EXTRA_LIB]
+    ARDUINO_LIBS.append(EXTRA_LIB)
 if SKETCHBOOK_HOME:
-    ARDUINO_LIBS += [pathJoin(SKETCHBOOK_HOME, 'libraries')]
+    ARDUINO_LIBS.append(pathJoin(SKETCHBOOK_HOME, 'libraries'))
 
 # check given board name, ARDUINO_BOARD is valid one
 ptnBoard = re.compile(r'^(.*)\.name=(.*)')
@@ -255,7 +255,7 @@ for line in open (TARGET+FILE_EXTENSION):
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
 if ARDUINO_VER >= 20 and 'Ethernet' in libCandidates:
-    libCandidates += ['SPI']
+    libCandidates.append('SPI')
 
 all_libs_sources = []
 index = 0
@@ -333,7 +333,7 @@ if UPLOAD_PROTOCOL == 'stk500':
 avrdudeOpts = ['-V', '-F', '-c %s'%UPLOAD_PROTOCOL, '-b %s'%UPLOAD_SPEED,
     '-p %s'%MCU, '-P %s'%ARDUINO_PORT, '-U flash:w:$SOURCES']
 if AVRDUDE_CONF:
-    avrdudeOpts += ['-C %s'%AVRDUDE_CONF]
+    avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
 fuse_cmd = '%s %s'%(pathJoin(os.path.dirname(AVR_BIN_PREFIX), 'avrdude'),
                      ' '.join(avrdudeOpts))
