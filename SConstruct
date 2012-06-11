@@ -258,8 +258,7 @@ if ARDUINO_VER >= 20 and 'Ethernet' in libCandidates:
     libCandidates.append('SPI')
 
 all_libs_sources = []
-index = 0
-for orig_lib_dir in ARDUINO_LIBS:
+for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
     lib_sources = []
     lib_dir = 'build/lib_%02d'%index
     VariantDir(lib_dir, orig_lib_dir)
@@ -275,7 +274,6 @@ for orig_lib_dir in ARDUINO_LIBS:
             envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
         lib_sources = map(lambda x: x.replace(orig_lib_dir, lib_dir), lib_sources)
         all_libs_sources += lib_sources
-    index += 1
 
 # Add raw sources which live in sketch dir.
 build_top = os.path.realpath('.')
