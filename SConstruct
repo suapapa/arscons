@@ -99,8 +99,7 @@ if ARDUINO_VER == 0:
 else:
         print "Arduino version " + ARDUINO_VER + " specified"
 
-if ARDUINO_VER < 100: FILE_EXTENSION = ".pde"
-if ARDUINO_VER >= 100: FILE_EXTENSION = ".ino"
+FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
 
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32': 
