@@ -116,9 +116,9 @@ if SKETCHBOOK_HOME:
 ptnBoard = re.compile(r'^(.*)\.name=(.*)')
 boards = {}
 for line in open(ARDUINO_CONF):
-    result = ptnBoard.findall(line)
+    result = ptnBoard.match(line)
     if result:
-        boards[result[0][0]] = result[0][1]
+        boards[result.group(1)] = result.group(2)
 if ARDUINO_BOARD not in boards:
     print ("ERROR! the given board name, %s is not in the supported board list:"%ARDUINO_BOARD)
     print ("all available board names are:")
@@ -130,9 +130,9 @@ if ARDUINO_BOARD not in boards:
 def getBoardConf(strPtn):
     ptn = re.compile(strPtn)
     for line in open(ARDUINO_CONF):
-        result = ptn.findall(line)
+        result = ptn.search(line)
         if result:
-            return result[0]
+            return result.group(1)
     assert(False)
 
 MCU = getBoardConf(r'^%s\.build\.mcu=(.*)'%ARDUINO_BOARD)
@@ -201,9 +201,9 @@ def fnProcessing(target, source, env):
 
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         for line in open(file):
-            result = re_signature.findall(line)
+            result = re_signature.search(line)
             if result:
-                prototypes[result[0][0]] = result[0][1]
+                prototypes[result.group(1)] = result.group(2)
 
     for name in prototypes.keys():
         print ("%s;"%(name))
@@ -242,10 +242,10 @@ core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_source
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open (TARGET+FILE_EXTENSION):
-    result = ptnLib.findall(line)
+    result = ptnLib.search(line)
     if result:
         # Look for the library directory that contains the header.
-        filename=result[0]+'.h'
+        filename = result.group(1) + '.h'
         for libdir in ARDUINO_LIBS:
             for root, dirs, files in os.walk(libdir, followlinks=True):
                 for f in files:
