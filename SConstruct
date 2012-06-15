@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 # scons script for the Arduino sketch
-# http://code.google.com/p/arscons/
+# http://github.com/suapapa/arscons
 #
-# Copyright (C) 2010 by Homin Lee <ff4500@gmail.com>
+# Copyright (C) 2010-2012 by Homin Lee <ff4500@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #
 # $ scons EXTRA_LIB=<my-extra-library-dir>
 #
+
 from glob import glob
 import sys
 import re
@@ -90,21 +91,21 @@ ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 
 arduino_file_path = pathJoin(ARDUINO_CORE, 'Arduino.h')
 if ARDUINO_VER == 0:
-        print "No Arduino version specified. Discovered version",
-        if os.path.exists(arduino_file_path): 
-                print "100 or above"
-                ARDUINO_VER = 100
-        else:   
-                print "0023 or below"
-                ARDUINO_VER = 23
+    print "No Arduino version specified. Discovered version",
+    if os.path.exists(arduino_file_path):
+        print "100 or above"
+        ARDUINO_VER = 100
+    else:
+        print "0023 or below"
+        ARDUINO_VER = 23
 else:
-        print "Arduino version " + ARDUINO_VER + " specified"
+    print "Arduino version " + ARDUINO_VER + " specified"
 
 if ARDUINO_VER < 100: FILE_EXTENSION = ".pde"
 if ARDUINO_VER >= 100: FILE_EXTENSION = ".ino"
 
 # Some OSs need bundle with IDE tool-chain
-if platform == 'darwin' or platform == 'win32': 
+if platform == 'darwin' or platform == 'win32':
     AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
     AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
@@ -185,11 +186,11 @@ def fnProcessing(target, source, env):
     wp = open ('%s'%target[0], 'wb')
     wp.write(open(ARDUINO_SKEL).read())
 
-    types='''void 
-    int char word long 
+    types='''void
+    int char word long
     float double byte long
-    boolean 
-    uint8_t uint16_t uint32_t 
+    boolean
+    uint8_t uint16_t uint32_t
     int8_t int16_t int32_t
     '''
     types=' | '.join(types.split())

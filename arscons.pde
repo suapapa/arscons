@@ -4,7 +4,7 @@
 
 void setup(void)
 {
-  pinMode(PIN_LED, OUTPUT);    
+  pinMode(PIN_LED, OUTPUT);
 }
 
 void loop(void)
