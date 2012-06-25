@@ -13,7 +13,7 @@
 # You'll need the serial module: http://pypi.python.org/pypi/pyserial
 
 # Basic Usage:
-# 1. make a folder which have same name of the sketch (ex. Blink/ for Blik.pde)
+# 1. make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
 # 2. put the sketch and SConstruct(this file) under the folder.
 # 3. to make the HEX. do following in the folder.
 #     $ scons
@@ -37,6 +37,8 @@
 # $ scons EXTRA_LIB=<my-extra-library-dir>
 #
 from glob import glob
+from itertools import ifilter, imap
+from subprocess import check_call, CalledProcessError
 import sys
 import re
 import os
@@ -47,8 +49,7 @@ platform = env['PLATFORM']
 
 def getUsbTty(rx):
     usb_ttys = glob(rx)
-    if len(usb_ttys) == 1: return usb_ttys[0]
-    else: return None
+    return usb_ttys[0] if len(usb_ttys) == 1 else None
 
 AVR_BIN_PREFIX = None
 AVRDUDE_CONF = None
@@ -90,18 +91,17 @@ ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 
 arduino_file_path = pathJoin(ARDUINO_CORE, 'Arduino.h')
 if ARDUINO_VER == 0:
-        print "No Arduino version specified. Discovered version",
-        if os.path.exists(arduino_file_path): 
-                print "100 or above"
-                ARDUINO_VER = 100
-        else:   
-                print "0023 or below"
-                ARDUINO_VER = 23
+    print "No Arduino version specified. Discovered version",
+    if os.path.exists(arduino_file_path):
+        print "100 or above"
+        ARDUINO_VER = 100
+    else:
+        print "0023 or below"
+        ARDUINO_VER = 23
 else:
-        print "Arduino version " + ARDUINO_VER + " specified"
+    print "Arduino version " + ARDUINO_VER + " specified"
 
-if ARDUINO_VER < 100: FILE_EXTENSION = ".pde"
-if ARDUINO_VER >= 100: FILE_EXTENSION = ".ino"
+FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
 
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32': 
@@ -110,162 +110,156 @@ if platform == 'darwin' or platform == 'win32':
 
 ARDUINO_LIBS = [pathJoin(ARDUINO_HOME, 'libraries')]
 if EXTRA_LIB:
-    ARDUINO_LIBS += [EXTRA_LIB]
+    ARDUINO_LIBS.append(EXTRA_LIB)
 if SKETCHBOOK_HOME:
-    ARDUINO_LIBS += [pathJoin(SKETCHBOOK_HOME, 'libraries')]
+    ARDUINO_LIBS.append(pathJoin(SKETCHBOOK_HOME, 'libraries'))
 
 # check given board name, ARDUINO_BOARD is valid one
 ptnBoard = re.compile(r'^(.*)\.name=(.*)')
 boards = {}
 for line in open(ARDUINO_CONF):
-    result = ptnBoard.findall(line)
+    result = ptnBoard.match(line)
     if result:
-        boards[result[0][0]] = result[0][1]
-if not ARDUINO_BOARD in boards.keys():
-    print ("ERROR! the given board name, %s is not in the supported board list:"%ARDUINO_BOARD)
-    print ("all available board names are:")
-    for name in boards.keys():
-        print ("\t%s for %s"%(name.ljust(14), boards[name]))
-    print ("however, you may edit %s to add a new board."%ARDUINO_CONF)
+        boards[result.group(1)] = result.group(2)
+if ARDUINO_BOARD not in boards:
+    print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
+    print "all available board names are:"
+    for name, description in boards.iteritems():
+        print "\t%s for %s" % (name.ljust(14), description)
+    print "however, you may edit %s to add a new board." % ARDUINO_CONF
     sys.exit(-1)
 
 def getBoardConf(strPtn):
     ptn = re.compile(strPtn)
     for line in open(ARDUINO_CONF):
-        result = ptn.findall(line)
+        result = ptn.search(line)
         if result:
-            return result[0]
+            return result.group(1)
     assert(False)
 
-MCU = getBoardConf(r'^%s\.build\.mcu=(.*)'%ARDUINO_BOARD)
+MCU = getBoardConf(r'^%s\.build\.mcu=(.*)' % ARDUINO_BOARD)
 MCU = ARGUMENTS.get('MCU', MCU)
-F_CPU = getBoardConf(r'^%s\.build\.f_cpu=(.*)'%ARDUINO_BOARD)
+F_CPU = getBoardConf(r'^%s\.build\.f_cpu=(.*)' % ARDUINO_BOARD)
 F_CPU = ARGUMENTS.get('F_CPU', F_CPU)
 
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
-assert(os.path.exists(TARGET+FILE_EXTENSION))
+assert(os.path.exists(TARGET + FILE_EXTENSION))
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
     '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
-    '-Os', '-mmcu=%s'%MCU]
-envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++', AS=AVR_BIN_PREFIX+'gcc',
-    CPPPATH = ['build/core'], CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
-    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags, ASFLAGS=['-assembler-with-cpp','-mmcu=%s'%MCU],
+    '-Os', '-mmcu=%s' % MCU]
+envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc', CXX = AVR_BIN_PREFIX + 'g++', AS=AVR_BIN_PREFIX + 'gcc',
+    CPPPATH = ['build/core'], CPPDEFINES = {'F_CPU': F_CPU, 'ARDUINO': ARDUINO_VER},
+    CFLAGS = cFlags + ['-std=gnu99'], CCFLAGS = cFlags, ASFLAGS=['-assembler-with-cpp','-mmcu=%s' % MCU],
     TOOLS = ['gcc','g++', 'as'])
 
 
 if ARDUINO_VER >= 100:
-        if ARDUINO_BOARD == 'nano328': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/eightanaloginputs/'))
-        elif ARDUINO_BOARD == 'leonardo': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
-        elif ARDUINO_BOARD == 'mega2560': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/mega/'))
-        elif ARDUINO_BOARD == 'micro': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/micro/'))
-        else: envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/standard/'))
+    board2path = dict(nano328='eightanaloginputs', leonardo='leonardo',
+            mega2560='mega', micro='micro')
+    envArduino.Append(CPPPATH=
+            pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/%s/' %
+                board2path.get(ARDUINO_BOARD, 'standard')))
 
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
-    import SCons.Script
-    print cmd
-    res = os.system(cmd)
-    # Assumes that if a process doesn't call exit, it was successful
-    if (os.WIFEXITED(res)):
-        code = os.WEXITSTATUS(res)
-        if code != 0:
-            print "Error: return code: " + str(code)
-            if SCons.Script.keep_going_on_error == 0:
-                sys.exit(code)
+    print ' '.join(cmd)
+    try:
+        check_call(cmd)
+    except CalledProcessError as cpe:
+        print "Error: return code: " + str(cpe.returncode)
+        sys.exit(cpe.returncode)
 
 def fnCompressCore(target, source, env):
-    core_files = filter(lambda x: str(x).startswith('build/core/'), source)
+    core_files = (x for x in imap(str, source) if x.startswith('build/core/'))
     for file in core_files:
-        run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
+        run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
 
 def fnProcessing(target, source, env):
-    wp = open ('%s'%target[0], 'wb')
+    wp = open(str(target[0]), 'wb')
     wp.write(open(ARDUINO_SKEL).read())
 
-    types='''void 
+    types = '''void
     int char word long 
     float double byte long
     boolean 
     uint8_t uint16_t uint32_t 
     int8_t int16_t int32_t
     '''
-    types=' | '.join(types.split())
-    re_signature=re.compile(r"""^\s* (
+    types = ' | '.join(types.split())
+    re_signature = re.compile(r"""^\s* (
         (?: (%s) \s+ )?
         \w+ \s*
         \( \s* ((%s) \s+ \*? \w+ (?:\s*,\s*)? )* \)
-        ) \s* {? \s* $""" % (types,types), re.MULTILINE|re.VERBOSE)
+        ) \s* {? \s* $""" % (types, types), re.MULTILINE | re.VERBOSE)
 
     prototypes = {}
 
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         for line in open(file):
-            result = re_signature.findall(line)
+            result = re_signature.search(line)
             if result:
-                prototypes[result[0][0]] = result[0][1]
+                prototypes[result.group(1)] = result.group(2)
 
-    for name in prototypes.keys():
-        print ("%s;"%(name))
-        wp.write("%s;\n"%name)
+    for name in prototypes.iterkeys():
+        print "%s;" % name
+        wp.write("%s;\n" % name)
 
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         print file, TARGET
-        if not os.path.samefile(file, TARGET+FILE_EXTENSION):
-                wp.write('#line 1 "%s"\r\n' % file)
-                wp.write(open(file).read())
+        if not os.path.samefile(file, TARGET + FILE_EXTENSION):
+            wp.write('#line 1 "%s"\r\n' % file)
+            wp.write(open(file).read())
 
     # Add this preprocessor directive to localize the errors.
-    sourcePath = str(source[0]).replace('\\', '\\\\');
+    sourcePath = str(source[0]).replace('\\', '\\\\')
     wp.write('#line 1 "%s"\r\n' % sourcePath)
-    wp.write(open('%s'%source[0]).read())
+    wp.write(open(str(source[0])).read())
 
 envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
         suffix = '.cpp', src_suffix = FILE_EXTENSION)})
 envArduino.Append(BUILDERS = {'CompressCore':Builder(action = fnCompressCore) })
-envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
-        '-mmcu=%s -Os -Wl,--gc-sections -o $TARGET $SOURCES -lm'%MCU)})
-envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
+envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX + 'gcc ' +
+        '-mmcu=%s -Os -Wl,--gc-sections -o $TARGET $SOURCES -lm' % MCU)})
+envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX + 'objcopy ' +
         '-O ihex -R .eeprom $SOURCES $TARGET')})
 
-gatherSources = lambda x: glob(pathJoin(x, '*.c'))+\
-        glob(pathJoin(x, '*.cpp'))+\
-        glob(pathJoin(x, '*.S'))
+SOURCE_RE = re.compile(r'\.(?:c(?:pp)?|S)$')
+def gatherSources(srcpath):
+    return [pathJoin(srcpath, f) for f
+            in os.listdir(srcpath) if SOURCE_RE.search(f)]
 
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
-core_sources = filter(lambda x: not (os.path.basename(x) == 'main.cpp'), core_sources)
-core_sources = map(lambda x: x.replace(ARDUINO_CORE, 'build/core/'), core_sources)
+core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x in core_sources
+        if os.path.basename(x) != 'main.cpp']
 
 # add libraries
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
-for line in open (TARGET+FILE_EXTENSION):
-    result = ptnLib.findall(line)
+for line in open(TARGET + FILE_EXTENSION):
+    result = ptnLib.search(line)
     if result:
         # Look for the library directory that contains the header.
-        filename=result[0]+'.h'
+        filename = result.group(1) + '.h'
         for libdir in ARDUINO_LIBS:
             for root, dirs, files in os.walk(libdir, followlinks=True):
-                for f in files:
-                    if f == filename:
-                        libCandidates += [os.path.basename(root)]
+                if filename in files:
+                    libCandidates.append(os.path.basename(root))
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
 if ARDUINO_VER >= 20 and 'Ethernet' in libCandidates:
-    libCandidates += ['SPI']
+    libCandidates.append('SPI')
 
 all_libs_sources = []
-index = 0
-for orig_lib_dir in ARDUINO_LIBS:
-    lib_sources = []
-    lib_dir = 'build/lib_%02d'%index
+for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
+    lib_dir = 'build/lib_%02d' % index
     VariantDir(lib_dir, orig_lib_dir)
-    for libPath in filter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
+    for libPath in ifilter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
         libName = os.path.basename(libPath)
         if not libName in libCandidates:
             continue
@@ -275,23 +269,22 @@ for orig_lib_dir in ARDUINO_LIBS:
         if os.path.exists(utilDir) and os.path.isdir(utilDir):
             lib_sources += gatherSources(utilDir)
             envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
-        lib_sources = map(lambda x: x.replace(orig_lib_dir, lib_dir), lib_sources)
-        all_libs_sources += lib_sources
-    index += 1
+        lib_sources = (x.replace(orig_lib_dir, lib_dir) for x in lib_sources)
+        all_libs_sources.extend(lib_sources)
 
 # Add raw sources which live in sketch dir.
 build_top = os.path.realpath('.')
 VariantDir('build/local/', build_top)
 local_sources = gatherSources(build_top)
-local_sources = map(lambda x: x.replace(build_top, 'build/local/'), local_sources)
+local_sources = [x.replace(build_top, 'build/local/') for x in local_sources]
 if local_sources:
     envArduino.Append(CPPPATH = 'build/local')
 
 # Convert sketch(.pde) to cpp
-envArduino.Processing('build/'+TARGET+'.cpp', 'build/'+TARGET+FILE_EXTENSION)
+envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + FILE_EXTENSION)
 VariantDir('build', '.')
 
-sources = ['build/'+TARGET+'.cpp']
+sources = ['build/' + TARGET + '.cpp']
 #sources += core_sources
 sources += local_sources
 sources += all_libs_sources
@@ -300,14 +293,14 @@ sources += all_libs_sources
 core_objs = envArduino.Object(core_sources)
 objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
 objs = objs + envArduino.CompressCore('build/core.a', core_objs)
-envArduino.Elf(TARGET+'.elf', objs)
-envArduino.Hex(TARGET+'.hex', TARGET+'.elf')
+envArduino.Elf(TARGET + '.elf', objs)
+envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
 
 # Print Size
 # TODO: check binary size
-MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)'%ARDUINO_BOARD)
-print ("maximum size for hex file: %s bytes"%MAX_SIZE)
-envArduino.Command(None, TARGET+'.hex', AVR_BIN_PREFIX+'size --target=ihex $SOURCE')
+MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)' % ARDUINO_BOARD)
+print "maximum size for hex file: %s bytes" % MAX_SIZE
+envArduino.Command(None, TARGET + '.hex', AVR_BIN_PREFIX + 'size --target=ihex $SOURCE')
 
 # Reset
 def pulseDTR(target, source, env):
@@ -320,27 +313,27 @@ def pulseDTR(target, source, env):
     ser.close()
 
 if RST_TRIGGER:
-    reset_cmd = '%s %s'%(RST_TRIGGER, ARDUINO_PORT)
+    reset_cmd = '%s %s' % (RST_TRIGGER, ARDUINO_PORT)
 else:
     reset_cmd = pulseDTR
 
 # Upload
-UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)'%ARDUINO_BOARD)
-UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)'%ARDUINO_BOARD)
+UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)' % ARDUINO_BOARD)
+UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)' % ARDUINO_BOARD)
 
 if UPLOAD_PROTOCOL == 'stk500':
     UPLOAD_PROTOCOL = 'stk500v1'
 
 
-avrdudeOpts = ['-V', '-F', '-c %s'%UPLOAD_PROTOCOL, '-b %s'%UPLOAD_SPEED,
-    '-p %s'%MCU, '-P %s'%ARDUINO_PORT, '-U flash:w:$SOURCES']
+avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
+    '-p %s' % MCU, '-P %s' % ARDUINO_PORT, '-U flash:w:$SOURCES']
 if AVRDUDE_CONF:
-    avrdudeOpts += ['-C %s'%AVRDUDE_CONF]
+    avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
-fuse_cmd = '%s %s'%(pathJoin(os.path.dirname(AVR_BIN_PREFIX), 'avrdude'),
+fuse_cmd = '%s %s' % (pathJoin(os.path.dirname(AVR_BIN_PREFIX), 'avrdude'),
                      ' '.join(avrdudeOpts))
 
-upload = envArduino.Alias('upload', TARGET+'.hex', [reset_cmd, fuse_cmd]);
+upload = envArduino.Alias('upload', TARGET + '.hex', [reset_cmd, fuse_cmd])
 AlwaysBuild(upload)
 
 # Clean build directory
