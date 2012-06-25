@@ -130,6 +130,7 @@ if not ARDUINO_BOARD in boards.keys():
     print ("however, you may edit %s to add a new board."%ARDUINO_CONF)
     sys.exit(-1)
 
+
 def getBoardConf(strPtn):
     ptn = re.compile(strPtn)
     for line in open(ARDUINO_CONF):
@@ -137,6 +138,7 @@ def getBoardConf(strPtn):
         if result:
             return result[0]
     assert(False)
+
 
 MCU = getBoardConf(r'^%s\.build\.mcu=(.*)'%ARDUINO_BOARD)
 MCU = ARGUMENTS.get('MCU', MCU)
@@ -148,20 +150,34 @@ TARGET = os.path.basename(os.path.realpath(os.curdir))
 assert(os.path.exists(TARGET+FILE_EXTENSION))
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
-    '-funsigned-char', '-funsigned-bitfields', '-fpack-struct', '-fshort-enums',
-    '-Os', '-mmcu=%s'%MCU]
-envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc', CXX = AVR_BIN_PREFIX+'g++', AS=AVR_BIN_PREFIX+'gcc',
-    CPPPATH = ['build/core'], CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
-    CFLAGS = cFlags+['-std=gnu99'], CCFLAGS = cFlags, ASFLAGS=['-assembler-with-cpp','-mmcu=%s'%MCU],
-    TOOLS = ['gcc','g++', 'as'])
+          '-funsigned-char', '-funsigned-bitfields', '-fpack-struct',
+          '-fshort-enums', '-Os', '-mmcu=%s'%MCU]
+envArduino = Environment(CC = AVR_BIN_PREFIX+'gcc',
+                         CXX = AVR_BIN_PREFIX+'g++',
+                         AS=AVR_BIN_PREFIX+'gcc',
+                         CPPPATH = ['build/core'],
+                         CPPDEFINES = {'F_CPU':F_CPU, 'ARDUINO':ARDUINO_VER},
+                         CFLAGS = cFlags+['-std=gnu99'],
+                         CCFLAGS = cFlags,
+                         ASFLAGS=['-assembler-with-cpp','-mmcu=%s'%MCU],
+                         TOOLS = ['gcc','g++', 'as'])
 
 
 if ARDUINO_VER >= 100:
-        if ARDUINO_BOARD == 'nano328': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/eightanaloginputs/'))
-        elif ARDUINO_BOARD == 'leonardo': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/leonardo/'))
-        elif ARDUINO_BOARD == 'mega2560': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/mega/'))
-        elif ARDUINO_BOARD == 'micro': envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/micro/'))
-        else: envArduino.Append(CPPPATH = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants/standard/'))
+    if ARDUINO_BOARD == 'nano328':
+        var = 'eightanaloginputs'
+    elif ARDUINO_BOARD == 'leonardo':
+        var = 'leonardo'
+    elif ARDUINO_BOARD == 'mega2560':
+        var = 'mega'
+    elif ARDUINO_BOARD == 'micro':
+        var = 'micro'
+    else:
+        var = 'standard'
+
+    hwVarPath =  pathJoin(ARDUINO_HOME, 'hardware/arduino/variants', var)
+    envArduino.Append(CPPPATH = hwVarPath)
+
 
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
@@ -169,17 +185,14 @@ def run(cmd):
     print cmd
     res = os.system(cmd)
     # Assumes that if a process doesn't call exit, it was successful
-    if (os.WIFEXITED(res)):
-        code = os.WEXITSTATUS(res)
-        if code != 0:
-            print "Error: return code: " + str(code)
-            if SCons.Script.keep_going_on_error == 0:
-                sys.exit(code)
-
-def fnCompressCore(target, source, env):
-    core_files = filter(lambda x: str(x).startswith('build/core/'), source)
-    for file in core_files:
-        run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
+    if 0 == os.WIFEXITED(res):
+        return
+    
+    code = os.WEXITSTATUS(res)
+    if code != 0:
+        print "Error: return code: " + str(code)
+        if SCons.Script.keep_going_on_error == 0:
+            sys.exit(code)
 
 
 def fnProcessing(target, source, env):
@@ -187,12 +200,11 @@ def fnProcessing(target, source, env):
     wp.write(open(ARDUINO_SKEL).read())
 
     types='''void
-    int char word long
-    float double byte long
-    boolean
-    uint8_t uint16_t uint32_t
-    int8_t int16_t int32_t
-    '''
+             int char word long
+             float double byte long
+             boolean
+             uint8_t uint16_t uint32_t
+             int8_t int16_t int32_t'''
     types=' | '.join(types.split())
     re_signature=re.compile(r"""^\s* (
         (?: (%s) \s+ )?
@@ -215,25 +227,40 @@ def fnProcessing(target, source, env):
     for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
         print file, TARGET
         if not os.path.samefile(file, TARGET+FILE_EXTENSION):
-                wp.write('#line 1 "%s"\r\n' % file)
-                wp.write(open(file).read())
+            wp.write('#line 1 "%s"\r\n' % file)
+            wp.write(open(file).read())
 
     # Add this preprocessor directive to localize the errors.
     sourcePath = str(source[0]).replace('\\', '\\\\');
     wp.write('#line 1 "%s"\r\n' % sourcePath)
     wp.write(open('%s'%source[0]).read())
 
-envArduino.Append(BUILDERS = {'Processing':Builder(action = fnProcessing,
-        suffix = '.cpp', src_suffix = FILE_EXTENSION)})
-envArduino.Append(BUILDERS = {'CompressCore':Builder(action = fnCompressCore) })
-envArduino.Append(BUILDERS={'Elf':Builder(action=AVR_BIN_PREFIX+'gcc '+
-        '-mmcu=%s -Os -Wl,--gc-sections -o $TARGET $SOURCES -lm'%MCU)})
-envArduino.Append(BUILDERS={'Hex':Builder(action=AVR_BIN_PREFIX+'objcopy '+
-        '-O ihex -R .eeprom $SOURCES $TARGET')})
+def fnCompressCore(target, source, env):
+    core_files = filter(lambda x: str(x).startswith('build/core/'), source)
+    for file in core_files:
+        run(AVR_BIN_PREFIX+'ar rcs %s %s'%(target[0], file))
 
-gatherSources = lambda x: glob(pathJoin(x, '*.c'))+\
-        glob(pathJoin(x, '*.cpp'))+\
-        glob(pathJoin(x, '*.S'))
+def fnELF(target, source, env):
+    run(AVR_BIN_PREFIX+'gcc -mmcu=%s -Os -Wl,--gc-sections -o %s %s -lm'%\
+        (MCU, target[0], " ".join(map(str,source))))
+
+def fnHEX(target, source, env):
+    run(AVR_BIN_PREFIX+'objcopy -O ihex -R .eeprom %s %s'%\
+        (source[0], target[0]))
+
+bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = FILE_EXTENSION)
+bldCompressCore = Builder(action = fnCompressCore)
+bldELF = Builder(action = fnELF)
+bldHEX = Builder(action = fnHEX)
+
+envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
+envArduino.Append(BUILDERS = {'CompressCore': bldCompressCore})
+envArduino.Append(BUILDERS = {'Elf' : bldELF})
+envArduino.Append(BUILDERS = {'Hex' : bldHEX})
+
+gatherSources = lambda x: glob(pathJoin(x, '*.c')) + \
+                          glob(pathJoin(x, '*.cpp')) + \
+                          glob(pathJoin(x, '*.S'))
 
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
@@ -246,14 +273,15 @@ libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open (TARGET+FILE_EXTENSION):
     result = ptnLib.findall(line)
-    if result:
-        # Look for the library directory that contains the header.
-        filename=result[0]+'.h'
-        for libdir in ARDUINO_LIBS:
-            for root, dirs, files in os.walk(libdir, followlinks=True):
-                for f in files:
-                    if f == filename:
-                        libCandidates += [os.path.basename(root)]
+    if not result:
+        continue
+    # Look for the library directory that contains the header.
+    filename=result[0]+'.h'
+    for libdir in ARDUINO_LIBS:
+        for root, dirs, files in os.walk(libdir, followlinks=True):
+            for f in files:
+                if f == filename:
+                    libCandidates += [os.path.basename(root)]
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
