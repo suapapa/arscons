@@ -131,18 +131,18 @@ if ARDUINO_BOARD not in boards:
     sys.exit(-1)
 
 
-def getBoardConf(strPtn):
-    ptn = re.compile(strPtn)
+def getBoardConf(conf):
     for line in open(ARDUINO_CONF):
-        result = ptn.search(line)
-        if result:
-            return result.group(1)
+        line = line.strip()
+        if '=' in line:
+            key, value = line.split('=')
+            if key == '.'.join([ARDUINO_BOARD, conf]):
+                return value
+    print "ERROR! can't find %s in %s" % (conf, ARDUINO_CONF)
     assert(False)
 
-MCU = getBoardConf(r'^%s\.build\.mcu=(.*)' % ARDUINO_BOARD)
-MCU = ARGUMENTS.get('MCU', MCU)
-F_CPU = getBoardConf(r'^%s\.build\.f_cpu=(.*)' % ARDUINO_BOARD)
-F_CPU = ARGUMENTS.get('F_CPU', F_CPU)
+MCU = ARGUMENTS.get('MCU', getBoardConf('build.mcu'))
+F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
 # There should be a file with the same name as the folder and with the extension .pde
 TARGET = os.path.basename(os.path.realpath(os.curdir))
@@ -250,8 +250,8 @@ def gatherSources(srcpath):
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
-core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x in core_sources
-        if os.path.basename(x) != 'main.cpp']
+core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x
+                in core_sources if os.path.basename(x) != 'main.cpp']
 
 # add libraries
 libCandidates = []
@@ -314,7 +314,7 @@ envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
 
 # Print Size
 # TODO: check binary size
-MAX_SIZE = getBoardConf(r'^%s\.upload.maximum_size=(.*)' % ARDUINO_BOARD)
+MAX_SIZE = getBoardConf('upload.maximum_size')
 print "maximum size for hex file: %s bytes" % MAX_SIZE
 envArduino.Command(None, TARGET + '.hex', AVR_BIN_PREFIX + 'size --target=ihex $SOURCE')
 
@@ -334,15 +334,15 @@ else:
     reset_cmd = pulseDTR
 
 # Upload
-UPLOAD_PROTOCOL = getBoardConf(r'^%s\.upload\.protocol=(.*)' % ARDUINO_BOARD)
-UPLOAD_SPEED = getBoardConf(r'^%s\.upload\.speed=(.*)' % ARDUINO_BOARD)
+UPLOAD_PROTOCOL = getBoardConf('upload.protocol')
+UPLOAD_SPEED = getBoardConf('upload.speed')
 
 if UPLOAD_PROTOCOL == 'stk500':
     UPLOAD_PROTOCOL = 'stk500v1'
 
 
 avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
-    '-p %s' % MCU, '-P %s' % ARDUINO_PORT, '-U flash:w:$SOURCES']
+               '-p %s' % MCU, '-P %s' % ARDUINO_PORT, '-U flash:w:$SOURCES']
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
