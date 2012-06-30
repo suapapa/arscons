@@ -102,8 +102,6 @@ if ARDUINO_VER == 0:
 else:
     print "Arduino version " + ARDUINO_VER + " specified"
 
-FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
-
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32':
     AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
@@ -144,7 +142,9 @@ def getBoardConf(conf):
 MCU = ARGUMENTS.get('MCU', getBoardConf('build.mcu'))
 F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
-# There should be a file with the same name as the folder and with the extension .pde
+# There should be a file with the same name as the folder and
+# with the extension .pde or .ino
+FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
 TARGET = os.path.basename(os.path.realpath(os.curdir))
 assert(os.path.exists(TARGET + FILE_EXTENSION))
 
@@ -233,8 +233,8 @@ def fnCompressCore(target, source, env):
 
 bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = FILE_EXTENSION)
 bldCompressCore = Builder(action = fnCompressCore)
-bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s' % MCU +
-                          '-Os -Wl,--gc-sections -o $TARGET $SOURCES -lm')
+bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
+                          '-Os -Wl,--gc-sections -lm -o $TARGET $SOURCES')
 bldHEX = Builder(action = AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
 
 envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
@@ -258,13 +258,14 @@ libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open(TARGET + FILE_EXTENSION):
     result = ptnLib.search(line)
-    if result:
-        # Look for the library directory that contains the header.
-        filename = result.group(1) + '.h'
-        for libdir in ARDUINO_LIBS:
-            for root, dirs, files in os.walk(libdir, followlinks=True):
-                if filename in files:
-                    libCandidates.append(os.path.basename(root))
+    if not result:
+        continue
+    # Look for the library directory that contains the header.
+    filename = result.group(1) + '.h'
+    for libdir in ARDUINO_LIBS:
+        for root, dirs, files in os.walk(libdir, followlinks=True):
+            if filename in files:
+                libCandidates.append(os.path.basename(root))
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
