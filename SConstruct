@@ -158,7 +158,7 @@ assert(os.path.exists(TARGET + FILE_EXTENSION))
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
           '-funsigned-char', '-funsigned-bitfields', '-fpack-struct',
-          '-fshort-enums', '-Os', '-mmcu=%s' % MCU]
+          '-fshort-enums', '-Os', '-Wall', '-mmcu=%s' % MCU]
 envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          CXX = AVR_BIN_PREFIX + 'g++',
                          AS = AVR_BIN_PREFIX + 'gcc',
