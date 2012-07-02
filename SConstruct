@@ -162,18 +162,8 @@ envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          TOOLS = ['gcc','g++', 'as'])
 
 if ARDUINO_VER >= 100:
-    if ARDUINO_BOARD == 'nano328':
-        var = 'eightanaloginputs'
-    elif ARDUINO_BOARD == 'leonardo':
-        var = 'leonardo'
-    elif ARDUINO_BOARD == 'mega2560':
-        var = 'mega'
-    elif ARDUINO_BOARD == 'micro':
-        var = 'micro'
-    else:
-        var = 'standard'
-
-    hwVarPath =  pathJoin(ARDUINO_HOME, 'hardware/arduino/variants', var)
+    hwVarPath =  pathJoin(ARDUINO_HOME, 'hardware/arduino/variants',
+                          getBoardConf("build.variant"))
     envArduino.Append(CPPPATH = hwVarPath)
 
 def run(cmd):
