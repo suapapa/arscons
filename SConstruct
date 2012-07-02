@@ -86,14 +86,46 @@ if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
     raise KeyError('ARDUINO_HOME')
 
-ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/arduino')
-ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
+# TODO: search boarts.txt in sketch directory
 ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
+# check given board name, ARDUINO_BOARD is valid one
+ptnBoard = re.compile(r'^(.*)\.name=(.*)')
+boards = {}
+for line in open(ARDUINO_CONF):
+    result = ptnBoard.match(line)
+    if result:
+        boards[result.group(1)] = result.group(2)
+if ARDUINO_BOARD not in boards:
+    print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
+    print "all available board names are:"
+    for name, description in boards.iteritems():
+        print "\t%s for %s" % (name.ljust(14), description)
+    print "however, you may edit %s to add a new board." % ARDUINO_CONF
+    sys.exit(-1)
 
-arduino_file_path = pathJoin(ARDUINO_CORE, 'Arduino.h')
+
+def getBoardConf(conf, default = None):
+    for line in open(ARDUINO_CONF):
+        line = line.strip()
+        if '=' in line:
+            key, value = line.split('=')
+            if key == '.'.join([ARDUINO_BOARD, conf]):
+                return value
+    ret = default
+    if ret == None:
+        print "ERROR! can't find %s in %s" % (conf, ARDUINO_CONF)
+        assert(False)
+    return ret
+
+
+ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/',
+                        getBoardConf('build.core', 'arduino'))
+ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
+
 if ARDUINO_VER == 0:
+    arduinoHeader = pathJoin(ARDUINO_CORE, 'Arduino.h')
     print "No Arduino version specified. Discovered version",
-    if os.path.exists(arduino_file_path):
+    if os.path.exists(arduinoHeader):
         print "100 or above"
         ARDUINO_VER = 100
     else:
@@ -113,32 +145,8 @@ if EXTRA_LIB:
 if SKETCHBOOK_HOME:
     ARDUINO_LIBS.append(pathJoin(SKETCHBOOK_HOME, 'libraries'))
 
-# check given board name, ARDUINO_BOARD is valid one
-ptnBoard = re.compile(r'^(.*)\.name=(.*)')
-boards = {}
-for line in open(ARDUINO_CONF):
-    result = ptnBoard.match(line)
-    if result:
-        boards[result.group(1)] = result.group(2)
-if ARDUINO_BOARD not in boards:
-    print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
-    print "all available board names are:"
-    for name, description in boards.iteritems():
-        print "\t%s for %s" % (name.ljust(14), description)
-    print "however, you may edit %s to add a new board." % ARDUINO_CONF
-    sys.exit(-1)
 
-
-def getBoardConf(conf):
-    for line in open(ARDUINO_CONF):
-        line = line.strip()
-        if '=' in line:
-            key, value = line.split('=')
-            if key == '.'.join([ARDUINO_BOARD, conf]):
-                return value
-    print "ERROR! can't find %s in %s" % (conf, ARDUINO_CONF)
-    assert(False)
-
+# Override MCU and F_CPU
 MCU = ARGUMENTS.get('MCU', getBoardConf('build.mcu'))
 F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
@@ -161,10 +169,10 @@ envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          ASFLAGS = ['-assembler-with-cpp','-mmcu=%s' % MCU],
                          TOOLS = ['gcc','g++', 'as'])
 
-if ARDUINO_VER >= 100:
-    hwVarPath =  pathJoin(ARDUINO_HOME, 'hardware/arduino/variants',
-                          getBoardConf("build.variant"))
-    envArduino.Append(CPPPATH = hwVarPath)
+hwVariant = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants',
+                     getBoardConf("build.variant", ""))
+if hwVariant:
+    envArduino.Append(CPPPATH = hwVariant)
 
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
