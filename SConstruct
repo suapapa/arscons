@@ -183,6 +183,13 @@ def run(cmd):
         print "Error: return code: " + str(cpe.returncode)
         sys.exit(cpe.returncode)
 
+# WindowXP not supported os.path.samefile
+def sameFile(p1, p2):
+    if platform == 'win32':
+        ap1 = os.path.abspath(p1)
+        ap2 = os.path.abspath(p2)
+        return ap1 == ap2
+    return os.path.samefile(p1, p2)
 
 def fnProcessing(target, source, env):
     wp = open(str(target[0]), 'wb')
@@ -215,7 +222,7 @@ def fnProcessing(target, source, env):
 
     for file in glob(os.path.realpath(os.curdir) + "/*" + sketchExt):
         print file, TARGET
-        if not os.path.samefile(file, TARGET + sketchExt):
+        if not sameFile(file, TARGET + sketchExt):
             wp.write('#line 1 "%s"\r\n' % file)
             wp.write(open(file).read())
 
