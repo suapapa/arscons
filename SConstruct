@@ -152,9 +152,9 @@ F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
 # There should be a file with the same name as the folder and
 # with the extension .pde or .ino
-FILE_EXTENSION = ".pde" if ARDUINO_VER < 100 else ".ino"
 TARGET = os.path.basename(os.path.realpath(os.curdir))
-assert(os.path.exists(TARGET + FILE_EXTENSION))
+assert(os.path.exists(TARGET + '.ino') or os.path.exists(TARGET + '.pde'))
+sketchExt = '.ino' if os.path.exists(TARGET + '.ino') else '.pde'
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
           '-funsigned-char', '-funsigned-bitfields', '-fpack-struct',
@@ -203,7 +203,7 @@ def fnProcessing(target, source, env):
 
     prototypes = {}
 
-    for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
+    for file in glob(os.path.realpath(os.curdir) + "/*" + sketchExt):
         for line in open(file):
             result = re_signature.search(line)
             if result:
@@ -213,9 +213,9 @@ def fnProcessing(target, source, env):
         print "%s;" % name
         wp.write("%s;\n" % name)
 
-    for file in glob(os.path.realpath(os.curdir) + "/*" + FILE_EXTENSION):
+    for file in glob(os.path.realpath(os.curdir) + "/*" + sketchExt):
         print file, TARGET
-        if not os.path.samefile(file, TARGET + FILE_EXTENSION):
+        if not os.path.samefile(file, TARGET + sketchExt):
             wp.write('#line 1 "%s"\r\n' % file)
             wp.write(open(file).read())
 
@@ -229,7 +229,7 @@ def fnCompressCore(target, source, env):
     for file in core_files:
         run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
-bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = FILE_EXTENSION)
+bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = sketchExt)
 bldCompressCore = Builder(action = fnCompressCore)
 bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
                           '-Os -Wl,--gc-sections -lm -o $TARGET $SOURCES')
@@ -254,7 +254,7 @@ core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x
 # add libraries
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
-for line in open(TARGET + FILE_EXTENSION):
+for line in open(TARGET + sketchExt):
     result = ptnLib.search(line)
     if not result:
         continue
@@ -296,7 +296,7 @@ if local_sources:
     envArduino.Append(CPPPATH = 'build/local')
 
 # Convert sketch(.pde) to cpp
-envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + FILE_EXTENSION)
+envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + sketchExt)
 VariantDir('build', '.')
 
 sources = ['build/' + TARGET + '.cpp']
