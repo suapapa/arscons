@@ -77,18 +77,22 @@ if platform == 'darwin':
                                       '/Applications/Arduino.app/Contents/Resources/Java')
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/tty.usbserial*'))
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
+    AVR_HOME            = resolve_var('AVR_HOME',
+                                      pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin'))
 elif platform == 'win32':
     # For Windows, use environment variables.
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME', None)
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', '')
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
+    AVR_HOME            = resolve_var('AVR_HOME',
+                                      pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin'))
 else:
     # For Ubuntu Linux (9.10 or higher)
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME', '/usr/share/arduino/')
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/ttyUSB*'))
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME',
                                       os.path.expanduser('~/share/arduino/sketchbook/'))
-    AVR_BIN_PREFIX = 'avr-'
+    AVR_HOME            = resolve_var('AVR_HOME', '')
 
 
 ARDUINO_BOARD   = resolve_var('ARDUINO_BOARD', 'atmega328')
@@ -150,8 +154,9 @@ else:
 
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32':
-    AVR_BIN_PREFIX = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin', 'avr-')
     AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
+
+AVR_BIN_PREFIX = pathJoin(AVR_HOME, 'avr-')
 
 ARDUINO_LIBS = [pathJoin(ARDUINO_HOME, 'libraries')]
 if EXTRA_LIB:
