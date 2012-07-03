@@ -43,8 +43,8 @@ from subprocess import check_call, CalledProcessError
 import sys
 import re
 import os
-from pprint import pprint as pp
-pathJoin = os.path.join
+from os import path
+from pprint import pprint
 
 env = Environment()
 platform = env['PLATFORM']
@@ -78,20 +78,20 @@ if platform == 'darwin':
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/tty.usbserial*'))
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
     AVR_HOME            = resolve_var('AVR_HOME',
-                                      pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin'))
+                                      path.join(ARDUINO_HOME, 'hardware/tools/avr/bin'))
 elif platform == 'win32':
     # For Windows, use environment variables.
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME', None)
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', '')
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
     AVR_HOME            = resolve_var('AVR_HOME',
-                                      pathJoin(ARDUINO_HOME, 'hardware/tools/avr/bin'))
+                                      path.join(ARDUINO_HOME, 'hardware/tools/avr/bin'))
 else:
     # For Ubuntu Linux (9.10 or higher)
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME', '/usr/share/arduino/')
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/ttyUSB*'))
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME',
-                                      os.path.expanduser('~/share/arduino/sketchbook/'))
+                                      path.expanduser('~/share/arduino/sketchbook/'))
     AVR_HOME            = resolve_var('AVR_HOME', '')
 
 
@@ -100,14 +100,16 @@ ARDUINO_VER     = resolve_var('ARDUINO_VER', 0) # Default to 0 if nothing is spe
 RST_TRIGGER     = resolve_var('RST_TRIGGER', None) # use built-in pulseDTR() by default
 EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 
+pprint(VARTAB, indent = 4)
+
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
     raise KeyError('ARDUINO_HOME')
 
-ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
+ARDUINO_CONF = path.join(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 # check given board name, ARDUINO_BOARD is valid one
-arduino_boards = pathJoin(ARDUINO_HOME,'hardware/*/boards.txt')
-custom_boards = pathJoin(SKETCHBOOK_HOME,'hardware/*/boards.txt')
+arduino_boards = path.join(ARDUINO_HOME,'hardware/*/boards.txt')
+custom_boards = path.join(SKETCHBOOK_HOME,'hardware/*/boards.txt')
 board_files = glob(arduino_boards) + glob(custom_boards)
 ptnBoard = re.compile(r'^([^#]*)\.name=(.*)')
 boards = {}
@@ -140,14 +142,14 @@ def getBoardConf(conf, default = None):
         assert(False)
     return ret
 
-ARDUINO_CORE = pathJoin(ARDUINO_HOME, os.path.dirname(ARDUINO_CONF),
-                        'cores/', getBoardConf('build.core', 'arduino'))
-ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
+ARDUINO_CORE = path.join(ARDUINO_HOME, path.dirname(ARDUINO_CONF),
+                         'cores/', getBoardConf('build.core', 'arduino'))
+ARDUINO_SKEL = path.join(ARDUINO_CORE, 'main.cpp')
 
 if ARDUINO_VER == 0:
-    arduinoHeader = pathJoin(ARDUINO_CORE, 'Arduino.h')
+    arduinoHeader = path.join(ARDUINO_CORE, 'Arduino.h')
     print "No Arduino version specified. Discovered version",
-    if os.path.exists(arduinoHeader):
+    if path.exists(arduinoHeader):
         print "100 or above"
         ARDUINO_VER = 100
     else:
@@ -158,15 +160,15 @@ else:
 
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32':
-    AVRDUDE_CONF = pathJoin(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
+    AVRDUDE_CONF = path.join(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
-AVR_BIN_PREFIX = pathJoin(AVR_HOME, 'avr-')
+AVR_BIN_PREFIX = path.join(AVR_HOME, 'avr-')
 
-ARDUINO_LIBS = [pathJoin(ARDUINO_HOME, 'libraries')]
+ARDUINO_LIBS = [path.join(ARDUINO_HOME, 'libraries')]
 if EXTRA_LIB:
     ARDUINO_LIBS.append(EXTRA_LIB)
 if SKETCHBOOK_HOME:
-    ARDUINO_LIBS.append(pathJoin(SKETCHBOOK_HOME, 'libraries'))
+    ARDUINO_LIBS.append(path.join(SKETCHBOOK_HOME, 'libraries'))
 
 
 # Override MCU and F_CPU
@@ -175,9 +177,9 @@ F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
 # There should be a file with the same name as the folder and
 # with the extension .pde or .ino
-TARGET = os.path.basename(os.path.realpath(os.curdir))
-assert(os.path.exists(TARGET + '.ino') or os.path.exists(TARGET + '.pde'))
-sketchExt = '.ino' if os.path.exists(TARGET + '.ino') else '.pde'
+TARGET = path.basename(path.realpath(os.curdir))
+assert(path.exists(TARGET + '.ino') or path.exists(TARGET + '.pde'))
+sketchExt = '.ino' if path.exists(TARGET + '.ino') else '.pde'
 
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
           '-funsigned-char', '-funsigned-bitfields', '-fpack-struct',
@@ -192,7 +194,7 @@ envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          ASFLAGS = ['-assembler-with-cpp','-mmcu=%s' % MCU],
                          TOOLS = ['gcc','g++', 'as'])
 
-hwVariant = pathJoin(ARDUINO_HOME, 'hardware/arduino/variants',
+hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/variants',
                      getBoardConf("build.variant", ""))
 if hwVariant:
     envArduino.Append(CPPPATH = hwVariant)
@@ -206,13 +208,13 @@ def run(cmd):
         print "Error: return code: " + str(cpe.returncode)
         sys.exit(cpe.returncode)
 
-# WindowXP not supported os.path.samefile
+# WindowXP not supported path.samefile
 def sameFile(p1, p2):
     if platform == 'win32':
-        ap1 = os.path.abspath(p1)
-        ap2 = os.path.abspath(p2)
+        ap1 = path.abspath(p1)
+        ap2 = path.abspath(p2)
         return ap1 == ap2
-    return os.path.samefile(p1, p2)
+    return path.samefile(p1, p2)
 
 def fnProcessing(target, source, env):
     wp = open(str(target[0]), 'wb')
@@ -233,7 +235,7 @@ def fnProcessing(target, source, env):
 
     prototypes = {}
 
-    for file in glob(os.path.realpath(os.curdir) + "/*" + sketchExt):
+    for file in glob(path.realpath(os.curdir) + "/*" + sketchExt):
         for line in open(file):
             result = re_signature.search(line)
             if result:
@@ -243,7 +245,7 @@ def fnProcessing(target, source, env):
         print "%s;" % name
         wp.write("%s;\n" % name)
 
-    for file in glob(os.path.realpath(os.curdir) + "/*" + sketchExt):
+    for file in glob(path.realpath(os.curdir) + "/*" + sketchExt):
         print file, TARGET
         if not sameFile(file, TARGET + sketchExt):
             wp.write('#line 1 "%s"\r\n' % file)
@@ -272,14 +274,14 @@ envArduino.Append(BUILDERS = {'Hex' : bldHEX})
 
 ptnSource = re.compile(r'\.(?:c(?:pp)?|S)$')
 def gatherSources(srcpath):
-    return [pathJoin(srcpath, f) for f
+    return [path.join(srcpath, f) for f
             in os.listdir(srcpath) if ptnSource.search(f)]
 
 # add arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
 core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x
-                in core_sources if os.path.basename(x) != 'main.cpp']
+                in core_sources if path.basename(x) != 'main.cpp']
 
 # add libraries
 libCandidates = []
@@ -293,7 +295,7 @@ for line in open(TARGET + sketchExt):
     for libdir in ARDUINO_LIBS:
         for root, dirs, files in os.walk(libdir, followlinks=True):
             if filename in files:
-                libCandidates.append(os.path.basename(root))
+                libCandidates.append(path.basename(root))
 
 # Hack. In version 20 of the Arduino IDE, the Ethernet library depends
 # implicitly on the SPI library.
@@ -304,21 +306,21 @@ all_libs_sources = []
 for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
     lib_dir = 'build/lib_%02d' % index
     VariantDir(lib_dir, orig_lib_dir)
-    for libPath in ifilter(os.path.isdir, glob(pathJoin(orig_lib_dir, '*'))):
-        libName = os.path.basename(libPath)
+    for libPath in ifilter(path.isdir, glob(path.join(orig_lib_dir, '*'))):
+        libName = path.basename(libPath)
         if not libName in libCandidates:
             continue
         envArduino.Append(CPPPATH = libPath.replace(orig_lib_dir, lib_dir))
         lib_sources = gatherSources(libPath)
-        utilDir = pathJoin(libPath, 'utility')
-        if os.path.exists(utilDir) and os.path.isdir(utilDir):
+        utilDir = path.join(libPath, 'utility')
+        if path.exists(utilDir) and path.isdir(utilDir):
             lib_sources += gatherSources(utilDir)
             envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
         lib_sources = (x.replace(orig_lib_dir, lib_dir) for x in lib_sources)
         all_libs_sources.extend(lib_sources)
 
 # Add raw sources which live in sketch dir.
-build_top = os.path.realpath('.')
+build_top = path.realpath('.')
 VariantDir('build/local/', build_top)
 local_sources = gatherSources(build_top)
 local_sources = [x.replace(build_top, 'build/local/') for x in local_sources]
@@ -375,8 +377,8 @@ avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
-fuse_cmd = '%s %s' % (pathJoin(os.path.dirname(AVR_BIN_PREFIX), 'avrdude'),
-                     ' '.join(avrdudeOpts))
+fuse_cmd = '%s %s' % (path.join(path.dirname(AVR_BIN_PREFIX), 'avrdude'),
+                      ' '.join(avrdudeOpts))
 
 upload = envArduino.Alias('upload', TARGET + '.hex', [reset_cmd, fuse_cmd])
 AlwaysBuild(upload)
