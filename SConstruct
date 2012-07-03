@@ -104,23 +104,28 @@ if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
     raise KeyError('ARDUINO_HOME')
 
-# TODO: search boarts.txt in sketch directory
 ARDUINO_CONF = pathJoin(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 # check given board name, ARDUINO_BOARD is valid one
-ptnBoard = re.compile(r'^(.*)\.name=(.*)')
+arduino_boards = pathJoin(ARDUINO_HOME,'hardware/*/boards.txt')
+custom_boards = pathJoin(SKETCHBOOK_HOME,'hardware/*/boards.txt')
+board_files = glob(arduino_boards) + glob(custom_boards)
+ptnBoard = re.compile(r'^([^#]*)\.name=(.*)')
 boards = {}
-for line in open(ARDUINO_CONF):
-    result = ptnBoard.match(line)
-    if result:
-        boards[result.group(1)] = result.group(2)
+for bf in board_files:
+    for line in open(bf):
+        result = ptnBoard.match(line)
+        if result:
+            boards[result.group(1)] = (result.group(2), bf)
+
 if ARDUINO_BOARD not in boards:
     print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
     print "all available board names are:"
     for name, description in boards.iteritems():
-        print "\t%s for %s" % (name.ljust(14), description)
-    print "however, you may edit %s to add a new board." % ARDUINO_CONF
+        print "\t%s for %s" % (name.ljust(14), description[0])
+    #print "however, you may edit %s to add a new board." % ARDUINO_CONF
     sys.exit(-1)
 
+ARDUINO_CONF = boards[ARDUINO_BOARD][1]
 
 def getBoardConf(conf, default = None):
     for line in open(ARDUINO_CONF):
@@ -135,9 +140,8 @@ def getBoardConf(conf, default = None):
         assert(False)
     return ret
 
-
-ARDUINO_CORE = pathJoin(ARDUINO_HOME, 'hardware/arduino/cores/',
-                        getBoardConf('build.core', 'arduino'))
+ARDUINO_CORE = pathJoin(ARDUINO_HOME, os.path.dirname(ARDUINO_CONF),
+                        'cores/', getBoardConf('build.core', 'arduino'))
 ARDUINO_SKEL = pathJoin(ARDUINO_CORE, 'main.cpp')
 
 if ARDUINO_VER == 0:
