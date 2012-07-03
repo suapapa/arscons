@@ -43,10 +43,26 @@ from subprocess import check_call, CalledProcessError
 import sys
 import re
 import os
+from pprint import pprint as pp
 pathJoin = os.path.join
 
 env = Environment()
 platform = env['PLATFORM']
+
+VARTAB = {}
+
+def resolve_var(varname, default_value):
+    global VARTAB
+    # precedence: scons argument -> environment variable -> default value
+    ret = ARGUMENTS.get(varname, None)
+    VARTAB[varname] = ('arg', ret)
+    if ret == None:
+        ret = os.environ.get(varname, None)
+        VARTAB[varname] = ('env', ret)
+    if ret == None:
+        ret = default_value
+        VARTAB[varname] = ('dfl', ret)
+    return ret
 
 def getUsbTty(rx):
     usb_ttys = glob(rx)
@@ -57,30 +73,28 @@ AVRDUDE_CONF = None
 
 if platform == 'darwin':
     # For MacOS X, pick up the AVR tools from within Arduino.app
-    ARDUINO_HOME_DEFAULT = '/Applications/Arduino.app/Contents/Resources/Java'
-    ARDUINO_PORT_DEFAULT = getUsbTty('/dev/tty.usbserial*')
-    SKETCHBOOK_HOME_DEFAULT = ''
+    ARDUINO_HOME        = resolve_var('ARDUINO_HOME',
+                                      '/Applications/Arduino.app/Contents/Resources/Java')
+    ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/tty.usbserial*'))
+    SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
 elif platform == 'win32':
     # For Windows, use environment variables.
-    ARDUINO_HOME_DEFAULT = os.environ.get('ARDUINO_HOME')
-    ARDUINO_PORT_DEFAULT = os.environ.get('ARDUINO_PORT')
-    SKETCHBOOK_HOME_DEFAULT = ''
+    ARDUINO_HOME        = resolve_var('ARDUINO_HOME', None)
+    ARDUINO_PORT        = resolve_var('ARDUINO_PORT', '')
+    SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
 else:
     # For Ubuntu Linux (9.10 or higher)
-    ARDUINO_HOME_DEFAULT = '/usr/share/arduino/' #'/home/YOU/apps/arduino-00XX/'
-    ARDUINO_PORT_DEFAULT = getUsbTty('/dev/ttyUSB*')
+    ARDUINO_HOME        = resolve_var('ARDUINO_HOME', '/usr/share/arduino/')
+    ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/ttyUSB*'))
+    SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME',
+                                      os.path.expanduser('~/share/arduino/sketchbook/'))
     AVR_BIN_PREFIX = 'avr-'
-    SKETCHBOOK_HOME_DEFAULT = os.path.expanduser('~/share/arduino/sketchbook/')
 
-ARDUINO_BOARD_DEFAULT = os.environ.get('ARDUINO_BOARD', 'atmega328')
 
-ARDUINO_HOME    = ARGUMENTS.get('ARDUINO_HOME', ARDUINO_HOME_DEFAULT)
-ARDUINO_PORT    = ARGUMENTS.get('ARDUINO_PORT', ARDUINO_PORT_DEFAULT)
-ARDUINO_BOARD   = ARGUMENTS.get('ARDUINO_BOARD', ARDUINO_BOARD_DEFAULT)
-ARDUINO_VER     = ARGUMENTS.get('ARDUINO_VER', 0) # Default to 0 if nothing is specified
-RST_TRIGGER     = ARGUMENTS.get('RST_TRIGGER', None) # use built-in pulseDTR() by default
-EXTRA_LIB       = ARGUMENTS.get('EXTRA_LIB', None) # handy for adding another arduino-lib dir
-SKETCHBOOK_HOME = ARGUMENTS.get('SKETCHBOOK_HOME', SKETCHBOOK_HOME_DEFAULT) # If set will add the libraries dir from the sketchbook
+ARDUINO_BOARD   = resolve_var('ARDUINO_BOARD', 'atmega328')
+ARDUINO_VER     = resolve_var('ARDUINO_VER', 0) # Default to 0 if nothing is specified
+RST_TRIGGER     = resolve_var('RST_TRIGGER', None) # use built-in pulseDTR() by default
+EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
