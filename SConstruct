@@ -264,7 +264,7 @@ def fnCompressCore(target, source, env):
 bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = sketchExt)
 bldCompressCore = Builder(action = fnCompressCore)
 bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
-                          '-Os -Wl,--gc-sections -lm -o $TARGET $SOURCES')
+                          '-Os -Wl,--gc-sections -lm -o $TARGET $SOURCES -lc')
 bldHEX = Builder(action = AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
 
 envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
