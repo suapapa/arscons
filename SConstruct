@@ -257,7 +257,9 @@ def fnProcessing(target, source, env):
     wp.write(open(str(source[0])).read())
 
 def fnCompressCore(target, source, env):
-    core_files = (x for x in imap(str, source) if x.startswith('build/core/'))
+    core_prefix = 'build/core/'.replace('/', os.path.sep)
+    core_files = (x for x in imap(str, source)
+                  if x.startswith(core_prefix))
     for file in core_files:
         run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
