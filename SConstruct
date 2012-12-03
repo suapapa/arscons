@@ -219,6 +219,16 @@ extra_cflags = [
     ]
 cFlags += extra_cflags
 
+if ARDUINO_BOARD == "leonardo":
+    for bf in board_files:
+        for line in open(bf):
+            if line.startswith(ARDUINO_BOARD+".build.vid"):
+                vid = line.split("=")[1].strip(" \n\r")
+                cFlags += ["-DUSB_VID="+vid]
+            if line.startswith(ARDUINO_BOARD+".build.pid"):
+                vid = line.split("=")[1].strip(" \n\r")
+                cFlags += ["-DUSB_PID="+vid]
+
 envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          CXX = AVR_BIN_PREFIX + 'g++',
                          AS = AVR_BIN_PREFIX + 'gcc',
