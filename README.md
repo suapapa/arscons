@@ -11,7 +11,7 @@ build & upload Arduino sketch on cmdline with scons!
 
 make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
 put the sketch and the SConstruct under the folder.
-to make the HEX. do following in the folder.
+Oto make the HEX. do following in the folder.
 
     $ scons
 
@@ -19,8 +19,8 @@ to upload the binary, do following in the folder.
 
     $ scons upload
 
-- refer [Expert Usage](wiki/Expert-Usage) for change the confs.
-- refer [Arscons Users](wiki/Arscons-Users) for arscons in practice (and hacks!)
+- refer [Expert Usage](arscons/wiki/Expert-Usage) for change the confs.
+- refer [Arscons Users](arscons/wiki/Arscons-Users) for arscons in practice (and hacks!)
 
 
 ## Thanks to:
