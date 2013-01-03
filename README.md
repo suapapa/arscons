@@ -1,6 +1,6 @@
 # Arscons : scons script for Arduino
 
-build & upload Arduino sketch on cmdline with scons!
+build & upload Arduino sketch on the command line with scons!
 
 - No java needed!
 - Use Arduino IDE's conf. so, all board which supported by Arduino supported by arscons.
