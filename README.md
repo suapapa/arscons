@@ -1,6 +1,6 @@
 # Arscons : scons script for Arduino
 
-build & upload Arduino sketch on cmdline with scons!
+build & upload Arduino sketch on the command line with scons!
 
 - No java needed!
 - Use Arduino IDE's conf. so, all board which supported by Arduino supported by arscons.
@@ -9,18 +9,18 @@ build & upload Arduino sketch on cmdline with scons!
 
 ## Basic Usage:
 
-make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
-put the sketch and the SConstruct under the folder.
-to make the HEX. do following in the folder.
+- make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
+- put the sketch and the SConstruct under the folder.
+- to make the HEX do following in the folder:
 
     $ scons
 
-to upload the binary, do following in the folder.
+- to upload the binary, do following in the folder:
 
     $ scons upload
 
-- refer [Expert Usage](wiki/Expert-Usage) for change the confs.
-- refer [Arscons Users](wiki/Arscons-Users) for arscons in practice (and hacks!)
+- refer [Expert Usage](arscons/wiki/Expert-Usage) for change the confs.
+- refer [Arscons Users](arscons/wiki/Arscons-Users) for arscons in practice (and hacks!)
 
 
 ## Thanks to:
