@@ -84,7 +84,8 @@ elif platform == 'win32':
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME', None)
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', '')
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
-    AVR_HOME            = resolve_var('AVR_HOME',
+    if ARDUINO_HOME:
+        AVR_HOME        = resolve_var('AVR_HOME',
                                       path.join(ARDUINO_HOME, 'hardware/tools/avr/bin'))
 else:
     # For Ubuntu Linux (9.10 or higher)
