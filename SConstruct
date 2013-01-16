@@ -46,10 +46,25 @@ import os
 from os import path
 from pprint import pprint
 
+import json
+
 env = Environment()
 platform = env['PLATFORM']
 
 VARTAB = {}
+
+try:
+    config = json.loads(open('arscons.json').read())
+except IOError:
+    config = None
+
+def config_get(varname, returns):
+    if config:
+        result = config.get(varname, returns)
+    else:
+        result = returns
+
+    return result
 
 def resolve_var(varname, default_value):
     global VARTAB
@@ -59,6 +74,9 @@ def resolve_var(varname, default_value):
     if ret == None:
         ret = os.environ.get(varname, None)
         VARTAB[varname] = ('env', ret)
+    if ret == None:
+        ret = config_get(varname, None)
+        VARTAB[varname] = ('cnf', ret)
     if ret == None:
         ret = default_value
         VARTAB[varname] = ('dfl', ret)
