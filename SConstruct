@@ -178,7 +178,13 @@ F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
 # There should be a file with the same name as the folder and
 # with the extension .pde or .ino
-TARGET = path.basename(path.realpath(os.curdir))
+# Or, one can specify it via the ARSCONS_TARGET environment
+# variable..
+
+TARGET = resolve_var('ARSCONS_TARGET', None)
+if TARGET is None:
+    TARGET = path.basename(path.realpath(os.curdir))
+
 assert(path.exists(TARGET + '.ino') or path.exists(TARGET + '.pde'))
 sketchExt = '.ino' if path.exists(TARGET + '.ino') else '.pde'
 
