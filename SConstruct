@@ -191,6 +191,16 @@ sketchExt = '.ino' if path.exists(TARGET + '.ino') else '.pde'
 cFlags = ['-ffunction-sections', '-fdata-sections', '-fno-exceptions',
           '-funsigned-char', '-funsigned-bitfields', '-fpack-struct',
           '-fshort-enums', '-Os', '-Wall', '-mmcu=%s' % MCU]
+
+# Add some missing paths to CFLAGS
+# Workaround for /usr/libexec/gcc/avr/ld: cannot open linker script file ldscripts/avr5.x: No such file or directory
+# Workaround for /usr/libexec/gcc/avr/ld: crtm168.o: No such file: No such file or directory
+extra_cflags = [
+    '-L/usr/x86_64-pc-linux-gnu/avr/lib/',
+    '-B/usr/avr/lib/avr5/',
+    ]
+cFlags += extra_cflags
+
 envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          CXX = AVR_BIN_PREFIX + 'g++',
                          AS = AVR_BIN_PREFIX + 'gcc',
@@ -273,7 +283,7 @@ def fnCompressCore(target, source, env):
 bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = sketchExt)
 bldCompressCore = Builder(action = fnCompressCore)
 bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
-                          '-Os -Wl,--gc-sections -lm -o $TARGET $SOURCES -lc')
+                          '-Os -Wl,--gc-sections -lm %s -o $TARGET $SOURCES -lc' % ' '.join(extra_cflags))
 bldHEX = Builder(action = AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
 
 envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
