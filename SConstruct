@@ -54,7 +54,7 @@ platform = env['PLATFORM']
 VARTAB = {}
 
 try:
-    config = json.loads(open('arscons.json').read())
+    config = json.load(open('arscons.json'))
 except IOError:
     config = None
 
@@ -68,7 +68,7 @@ def config_get(varname, returns):
 
 def resolve_var(varname, default_value):
     global VARTAB
-    # precedence: scons argument -> environment variable -> default value
+    # precedence: scons argument -> env. variable -> json config -> default value
     ret = ARGUMENTS.get(varname, None)
     VARTAB[varname] = ('arg', ret)
     if ret == None:
