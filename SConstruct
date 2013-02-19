@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-# scons script for the Arduino sketch
+# arscons: scons script for the Arduino sketch
 # http://github.com/suapapa/arscons
 #
-# Copyright (C) 2010-2012 by Homin Lee <homin.lee@suapapa.net>
+# Copyright (C) 2010-2013 by Homin Lee <homin.lee@suapapa.net>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,14 +39,15 @@
 
 from glob import glob
 from itertools import ifilter, imap
-from subprocess import check_call, CalledProcessError
-import sys
-import re
-import os
 from os import path
-from pprint import pprint
-
+from subprocess import check_call, CalledProcessError
 import json
+import os
+import re
+import sys
+
+# arscons version
+__version__ = "1.0.0"
 
 env = Environment()
 platform = env['PLATFORM']
@@ -119,8 +120,6 @@ ARDUINO_VER     = resolve_var('ARDUINO_VER', 0) # Default to 0 if nothing is spe
 RST_TRIGGER     = resolve_var('RST_TRIGGER', None) # use built-in pulseDTR() by default
 EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another arduino-lib dir
 
-pprint(VARTAB, indent = 4)
-
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
     raise KeyError('ARDUINO_HOME')
@@ -167,12 +166,12 @@ ARDUINO_SKEL = path.join(ARDUINO_CORE, 'main.cpp')
 
 if ARDUINO_VER == 0:
     arduinoHeader = path.join(ARDUINO_CORE, 'Arduino.h')
-    print "No Arduino version specified. Discovered version",
+    #print "No Arduino version specified. Discovered version",
     if path.exists(arduinoHeader):
-        print "100 or above"
+        #print "100 or above"
         ARDUINO_VER = 100
     else:
-        print "0023 or below"
+        #print "0023 or below"
         ARDUINO_VER = 23
 else:
     print "Arduino version " + ARDUINO_VER + " specified"
@@ -238,9 +237,16 @@ hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/variants',
 if hwVariant:
     envArduino.Append(CPPPATH = hwVariant)
 
+# Show version
+def printVersion(target, source, env):
+    print "arscons v%s"%__version__
+
+version = envArduino.Alias('version', None, [printVersion])
+AlwaysBuild(version)
+
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
-    print ' '.join(cmd)
+    # print ' '.join(cmd)
     try:
         check_call(cmd)
     except CalledProcessError as cpe:
@@ -302,16 +308,28 @@ def fnCompressCore(target, source, env):
     for file in core_files:
         run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
+def fnPrintInfo(target, source, env):
+    for k in VARTAB:
+        cameFrom, value = VARTAB[k]
+        print "* %s: %s (%s)"%(k, value, cameFrom)
+    print "* avr-size:"
+    run([AVR_BIN_PREFIX + 'size', '--target=ihex', str(source[0])])
+    # TODO: check binary size
+    print "* maximum size for hex file: %s bytes" % getBoardConf('upload.maximum_size')
+
+
 bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = sketchExt)
 bldCompressCore = Builder(action = fnCompressCore)
 bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
                           '-Os -Wl,--gc-sections -lm %s -o $TARGET $SOURCES -lc' % ' '.join(extra_cflags))
 bldHEX = Builder(action = AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
+bldInfo = Builder(action = fnPrintInfo)
 
 envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
 envArduino.Append(BUILDERS = {'CompressCore': bldCompressCore})
 envArduino.Append(BUILDERS = {'Elf' : bldELF})
 envArduino.Append(BUILDERS = {'Hex' : bldHEX})
+envArduino.Append(BUILDERS = {'BuildInfo' : bldInfo})
 
 ptnSource = re.compile(r'\.(?:c(?:pp)?|S)$')
 def gatherSources(srcpath):
@@ -383,12 +401,7 @@ objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
 objs = objs + envArduino.CompressCore('build/core.a', core_objs)
 envArduino.Elf(TARGET + '.elf', objs)
 envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
-
-# Print Size
-# TODO: check binary size
-MAX_SIZE = getBoardConf('upload.maximum_size')
-print "maximum size for hex file: %s bytes" % MAX_SIZE
-envArduino.Command(None, TARGET + '.hex', AVR_BIN_PREFIX + 'size --target=ihex $SOURCE')
+envArduino.BuildInfo(None, TARGET + '.hex')
 
 # Reset
 def pulseDTR(target, source, env):
