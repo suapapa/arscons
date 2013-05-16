@@ -182,6 +182,8 @@ else:
 # Some OSs need bundle with IDE tool-chain
 if platform == 'darwin' or platform == 'win32':
     AVRDUDE_CONF = path.join(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
+else:
+	AVRDUDE_CONF = path.join(AVR_HOME_DUDE, 'avrdude.conf')
 
 AVR_BIN_PREFIX = path.join(AVR_HOME, 'avr-')
 
@@ -305,7 +307,7 @@ def fnProcessing(target, source, env):
     wp.write(open(str(source[0])).read())
 
 def fnCompressCore(target, source, env):
-    core_prefix = 'build/core/'.replace('/', os.path.sep)
+    core_prefix = path.join('build','core')
     core_files = (x for x in imap(str, source)
                   if x.startswith(core_prefix))
     for file in core_files:
@@ -434,10 +436,7 @@ avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
-if AVR_HOME_DUDE:
-    AVR_BIN_PREFIX=AVR_HOME_DUDE
-
-fuse_cmd = '%s %s' % (path.join(path.dirname(AVR_BIN_PREFIX), 'avrdude'),
+fuse_cmd = '%s %s' % (path.join(path.dirname(AVR_HOME_DUDE), 'avrdude'),
                       ' '.join(avrdudeOpts))
 
 upload = envArduino.Alias('upload', TARGET + '.hex', [reset_cmd, fuse_cmd])
