@@ -172,7 +172,7 @@ if ARDUINO_VER == 0:
     #print "No Arduino version specified. Discovered version",
     if path.exists(arduinoHeader):
         #print "100 or above"
-        ARDUINO_VER = 100
+        ARDUINO_VER = 105
     else:
         #print "0023 or below"
         ARDUINO_VER = 23
@@ -188,6 +188,9 @@ else:
 AVR_BIN_PREFIX = path.join(AVR_HOME, 'avr-')
 
 ARDUINO_LIBS = [path.join(ARDUINO_HOME, 'libraries')]
+if os.path.exists('libs') and os.path.isdir('libs'):
+    ARDUINO_LIBS.append(os.path.abspath('libs'))
+    
 if EXTRA_LIB:
     ARDUINO_LIBS.append(EXTRA_LIB)
 if SKETCHBOOK_HOME:
@@ -358,13 +361,8 @@ for line in open(TARGET + sketchExt):
     filename = result.group(1) + '.h'
     for libdir in ARDUINO_LIBS:
         for root, dirs, files in os.walk(libdir, followlinks=True):
-            if filename in files:
+            if filename in files and os.path.basename(root) == result.group(1):
                 libCandidates.append(path.basename(root))
-
-# Hack. In version 20 of the Arduino IDE, the Ethernet library depends
-# implicitly on the SPI library.
-if ARDUINO_VER >= 20 and 'Ethernet' in libCandidates:
-    libCandidates.append('SPI')
 
 all_libs_sources = []
 for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
@@ -431,7 +429,7 @@ if UPLOAD_PROTOCOL == 'stk500':
     UPLOAD_PROTOCOL = 'stk500v1'
 
 
-avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
+avrdudeOpts = ['-v', '-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
                '-p %s' % MCU, '-P %s' % ARDUINO_PORT, '-U flash:w:$SOURCES']
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
