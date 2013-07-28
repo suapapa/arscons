@@ -19,8 +19,8 @@ build & upload Arduino sketch on the command line with scons!
 
     $ scons upload
 
-- refer [Expert Usage](arscons/wiki/Expert-Usage) for change the confs.
-- refer [Arscons Users](arscons/wiki/Arscons-Users) for arscons in practice (and hacks!)
+- refer [Expert Usage](https://github.com/suapapa/arscons/wiki/Expert-Usage) for change the confs.
+- refer [Arscons Users](https://github.com/suapapa/arscons/wiki/Arscons-Users) for arscons in practice (and hacks!)
 
 
 ## Thanks to:
