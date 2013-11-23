@@ -59,6 +59,7 @@ try:
 except IOError:
     config = None
 
+
 def config_get(varname, returns):
     if config:
         result = config.get(varname, returns)
@@ -67,21 +68,23 @@ def config_get(varname, returns):
 
     return result
 
+
 def resolve_var(varname, default_value):
     global VARTAB
     # precedence: scons argument -> env. variable -> json config -> default value
     ret = ARGUMENTS.get(varname, None)
     VARTAB[varname] = ('arg', ret)
-    if ret == None:
+    if ret is None:
         ret = os.environ.get(varname, None)
         VARTAB[varname] = ('env', ret)
-    if ret == None:
+    if ret is None:
         ret = config_get(varname, None)
         VARTAB[varname] = ('cnf', ret)
-    if ret == None:
+    if ret is None:
         ret = default_value
         VARTAB[varname] = ('dfl', ret)
     return ret
+
 
 def getUsbTty(rx):
     usb_ttys = glob(rx)
@@ -119,9 +122,9 @@ else:
                                       path.join(ARDUINO_HOME, 'hardware/tools/'))
 
 ARDUINO_BOARD   = resolve_var('ARDUINO_BOARD', 'atmega328')
-ARDUINO_VER     = resolve_var('ARDUINO_VER', 0) # Default to 0 if nothing is specified
-RST_TRIGGER     = resolve_var('RST_TRIGGER', None) # use built-in pulseDTR() by default
-EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another Arduino-lib dir
+ARDUINO_VER     = resolve_var('ARDUINO_VER', 0)     # Default to 0 if nothing is specified
+RST_TRIGGER     = resolve_var('RST_TRIGGER', None)  # Use built-in pulseDTR() by default
+EXTRA_LIB       = resolve_var('EXTRA_LIB', None)    # Handy for adding another Arduino-lib dir
 
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
@@ -129,8 +132,8 @@ if not ARDUINO_HOME:
 
 ARDUINO_CONF = path.join(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 # check if given board name, ARDUINO_BOARD is a valid one
-arduino_boards = path.join(ARDUINO_HOME,'hardware/*/boards.txt')
-custom_boards = path.join(SKETCHBOOK_HOME,'hardware/*/boards.txt')
+arduino_boards = path.join(ARDUINO_HOME, 'hardware/*/boards.txt')
+custom_boards = path.join(SKETCHBOOK_HOME, 'hardware/*/boards.txt')
 board_files = glob(arduino_boards) + glob(custom_boards)
 ptnBoard = re.compile(r'^([^#]*)\.name=(.*)')
 boards = {}
@@ -150,7 +153,8 @@ if ARDUINO_BOARD not in boards:
 
 ARDUINO_CONF = boards[ARDUINO_BOARD][1]
 
-def getBoardConf(conf, default = None):
+
+def getBoardConf(conf, default=None):
     for line in open(ARDUINO_CONF):
         line = line.strip()
         if '=' in line:
@@ -158,7 +162,7 @@ def getBoardConf(conf, default = None):
             if key == '.'.join([ARDUINO_BOARD, conf]):
                 return value
     ret = default
-    if ret == None:
+    if ret is None:
         print "ERROR! can't find %s in %s" % (conf, ARDUINO_CONF)
         assert(False)
     return ret
@@ -222,30 +226,32 @@ extra_cflags = [
 cFlags += extra_cflags
 
 if ARDUINO_BOARD == "leonardo":
-    cFlags += ["-DUSB_VID="+getBoardConf('build.vid')]
-    cFlags += ["-DUSB_PID="+getBoardConf('build.pid')]
+    cFlags += ["-DUSB_VID=" + getBoardConf('build.vid')]
+    cFlags += ["-DUSB_PID=" + getBoardConf('build.pid')]
 
-envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
-                         CXX = AVR_BIN_PREFIX + 'g++',
-                         AS = AVR_BIN_PREFIX + 'gcc',
-                         CPPPATH = ['build/core'],
-                         CPPDEFINES = {'F_CPU': F_CPU, 'ARDUINO': ARDUINO_VER},
-                         CFLAGS = cFlags + ['-std=gnu99'],
-                         CCFLAGS = cFlags,
-                         ASFLAGS = ['-assembler-with-cpp','-mmcu=%s' % MCU],
-                         TOOLS = ['gcc','g++', 'as'])
+envArduino = Environment(CC=AVR_BIN_PREFIX + 'gcc',
+                         CXX=AVR_BIN_PREFIX + 'g++',
+                         AS=AVR_BIN_PREFIX + 'gcc',
+                         CPPPATH=['build/core'],
+                         CPPDEFINES={'F_CPU': F_CPU, 'ARDUINO': ARDUINO_VER},
+                         CFLAGS=cFlags + ['-std=gnu99'],
+                         CCFLAGS=cFlags,
+                         ASFLAGS=['-assembler-with-cpp', '-mmcu=%s' % MCU],
+                         TOOLS=['gcc', 'g++', 'as'])
 
 hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/variants',
                      getBoardConf("build.variant", ""))
 if hwVariant:
-    envArduino.Append(CPPPATH = hwVariant)
+    envArduino.Append(CPPPATH=hwVariant)
+
 
 # Show version
 def printVersion(target, source, env):
-    print "arscons v%s"%__version__
+    print "arscons v%s" % __version__
 
 version = envArduino.Alias('version', None, [printVersion])
 AlwaysBuild(version)
+
 
 def run(cmd):
     """Run a command and decipher the return code. Exit by default."""
@@ -256,6 +262,7 @@ def run(cmd):
         print "Error: return code: " + str(cpe.returncode)
         sys.exit(cpe.returncode)
 
+
 # WindowXP does not support 'path.samefile'
 def sameFile(p1, p2):
     if platform == 'win32':
@@ -263,6 +270,7 @@ def sameFile(p1, p2):
         ap2 = path.abspath(p2)
         return ap1 == ap2
     return path.samefile(p1, p2)
+
 
 def fnProcessing(target, source, env):
     wp = open(str(target[0]), 'wb')
@@ -304,6 +312,7 @@ def fnProcessing(target, source, env):
     wp.write('#line 1 "%s"\r\n' % sourcePath)
     wp.write(open(str(source[0])).read())
 
+
 def fnCompressCore(target, source, env):
     core_prefix = 'build/core/'.replace('/', os.path.sep)
     core_files = (x for x in imap(str, source)
@@ -311,30 +320,33 @@ def fnCompressCore(target, source, env):
     for file in core_files:
         run([AVR_BIN_PREFIX + 'ar', 'rcs', str(target[0]), file])
 
+
 def fnPrintInfo(target, source, env):
     for k in VARTAB:
         cameFrom, value = VARTAB[k]
-        print "* %s: %s (%s)"%(k, value, cameFrom)
+        print "* %s: %s (%s)" % (k, value, cameFrom)
     print "* avr-size:"
     run([AVR_BIN_PREFIX + 'size', '--target=ihex', str(source[0])])
     # TODO: check binary size
     print "* maximum size for hex file: %s bytes" % getBoardConf('upload.maximum_size')
 
 
-bldProcessing = Builder(action = fnProcessing) #, suffix = '.cpp', src_suffix = sketchExt)
-bldCompressCore = Builder(action = fnCompressCore)
-bldELF = Builder(action = AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
+bldProcessing = Builder(action=fnProcessing)  # suffix = '.cpp', src_suffix = sketchExt)
+bldCompressCore = Builder(action=fnCompressCore)
+bldELF = Builder(action=AVR_BIN_PREFIX + 'gcc -mmcu=%s ' % MCU +
                           '-Os -Wl,--gc-sections -lm %s -o $TARGET $SOURCES -lc' % ' '.join(extra_cflags))
-bldHEX = Builder(action = AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
-bldInfo = Builder(action = fnPrintInfo)
+bldHEX = Builder(action=AVR_BIN_PREFIX + 'objcopy -O ihex -R .eeprom $SOURCES $TARGET')
+bldInfo = Builder(action=fnPrintInfo)
 
-envArduino.Append(BUILDERS = {'Processing' : bldProcessing})
-envArduino.Append(BUILDERS = {'CompressCore': bldCompressCore})
-envArduino.Append(BUILDERS = {'Elf' : bldELF})
-envArduino.Append(BUILDERS = {'Hex' : bldHEX})
-envArduino.Append(BUILDERS = {'BuildInfo' : bldInfo})
+envArduino.Append(BUILDERS={'Processing': bldProcessing})
+envArduino.Append(BUILDERS={'CompressCore': bldCompressCore})
+envArduino.Append(BUILDERS={'Elf': bldELF})
+envArduino.Append(BUILDERS={'Hex': bldHEX})
+envArduino.Append(BUILDERS={'BuildInfo': bldInfo})
 
 ptnSource = re.compile(r'\.(?:c(?:pp)?|S)$')
+
+
 def gatherSources(srcpath):
     return [path.join(srcpath, f) for f
             in os.listdir(srcpath) if ptnSource.search(f)]
@@ -372,12 +384,12 @@ for index, orig_lib_dir in enumerate(ARDUINO_LIBS):
         libName = path.basename(libPath)
         if not libName in libCandidates:
             continue
-        envArduino.Append(CPPPATH = libPath.replace(orig_lib_dir, lib_dir))
+        envArduino.Append(CPPPATH=libPath.replace(orig_lib_dir, lib_dir))
         lib_sources = gatherSources(libPath)
         utilDir = path.join(libPath, 'utility')
         if path.exists(utilDir) and path.isdir(utilDir):
             lib_sources += gatherSources(utilDir)
-            envArduino.Append(CPPPATH = utilDir.replace(orig_lib_dir, lib_dir))
+            envArduino.Append(CPPPATH=utilDir.replace(orig_lib_dir, lib_dir))
         lib_sources = (x.replace(orig_lib_dir, lib_dir) for x in lib_sources)
         all_libs_sources.extend(lib_sources)
 
@@ -387,7 +399,7 @@ VariantDir('build/local/', build_top)
 local_sources = gatherSources(build_top)
 local_sources = [x.replace(build_top, 'build/local/') for x in local_sources]
 if local_sources:
-    envArduino.Append(CPPPATH = 'build/local')
+    envArduino.Append(CPPPATH='build/local')
 
 # Convert sketch(.ino) to cpp
 envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + sketchExt)
@@ -400,11 +412,12 @@ sources += all_libs_sources
 
 # Finally Build!!
 core_objs = envArduino.Object(core_sources)
-objs = envArduino.Object(sources) #, LIBS=libs, LIBPATH='.')
+objs = envArduino.Object(sources)  # LIBS=libs, LIBPATH='.')
 objs = objs + envArduino.CompressCore('build/core.a', core_objs)
 envArduino.Elf(TARGET + '.elf', objs)
 envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
 envArduino.BuildInfo(None, TARGET + '.hex')
+
 
 # Reset
 def pulseDTR(target, source, env):
@@ -434,8 +447,9 @@ avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
+
 if AVR_HOME_DUDE:
-    AVR_BIN_PREFIX=AVR_HOME_DUDE
+    AVR_BIN_PREFIX = AVR_HOME_DUDE
 
 fuse_cmd = '%s %s' % (path.join(path.dirname(AVR_BIN_PREFIX), 'avrdude'),
                       ' '.join(avrdudeOpts))
