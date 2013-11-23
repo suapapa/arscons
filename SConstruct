@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# arscons: scons script for the Arduino sketch
+# arscons: SCons script for Arduino
 # http://github.com/suapapa/arscons
 #
 # Copyright (C) 2010-2013 by Homin Lee <homin.lee@suapapa.net>
@@ -13,7 +13,7 @@
 # You'll need the serial module: http://pypi.python.org/pypi/pyserial
 
 # Basic Usage:
-# 1. make a folder which have same name of the sketch (ex. Blink/ for Blink.pde)
+# 1. make a folder with the same name as the sketch (ex. Blink/ for Blink.ino)
 # 2. put the sketch and SConstruct(this file) under the folder.
 # 3. to make the HEX. do following in the folder.
 #     $ scons
@@ -121,14 +121,14 @@ else:
 ARDUINO_BOARD   = resolve_var('ARDUINO_BOARD', 'atmega328')
 ARDUINO_VER     = resolve_var('ARDUINO_VER', 0) # Default to 0 if nothing is specified
 RST_TRIGGER     = resolve_var('RST_TRIGGER', None) # use built-in pulseDTR() by default
-EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another arduino-lib dir
+EXTRA_LIB       = resolve_var('EXTRA_LIB', None) # handy for adding another Arduino-lib dir
 
 if not ARDUINO_HOME:
     print 'ARDUINO_HOME must be defined.'
     raise KeyError('ARDUINO_HOME')
 
 ARDUINO_CONF = path.join(ARDUINO_HOME, 'hardware/arduino/boards.txt')
-# check given board name, ARDUINO_BOARD is valid one
+# check if given board name, ARDUINO_BOARD is a valid one
 arduino_boards = path.join(ARDUINO_HOME,'hardware/*/boards.txt')
 custom_boards = path.join(SKETCHBOOK_HOME,'hardware/*/boards.txt')
 board_files = glob(arduino_boards) + glob(custom_boards)
@@ -141,7 +141,7 @@ for bf in board_files:
             boards[result.group(1)] = (result.group(2), bf)
 
 if ARDUINO_BOARD not in boards:
-    print "ERROR! the given board name, %s is not in the supported board list:" % ARDUINO_BOARD
+    print "ERROR! the given board name, %s is not in the supported boards list:" % ARDUINO_BOARD
     print "all available board names are:"
     for name, description in boards.iteritems():
         print "\t%s for %s" % (name.ljust(14), description[0])
@@ -179,7 +179,7 @@ if ARDUINO_VER == 0:
 else:
     print "Arduino version " + ARDUINO_VER + " specified"
 
-# Some OSs need bundle with IDE tool-chain
+# On some OSs we need to reuse parts of the original IDE tool-chain
 if platform == 'darwin' or platform == 'win32':
     AVRDUDE_CONF = path.join(ARDUINO_HOME, 'hardware/tools/avr/etc/avrdude.conf')
 
@@ -197,7 +197,7 @@ MCU = ARGUMENTS.get('MCU', getBoardConf('build.mcu'))
 F_CPU = ARGUMENTS.get('F_CPU', getBoardConf('build.f_cpu'))
 
 # There should be a file with the same name as the folder and
-# with the extension .pde or .ino
+# with the extension .ino (or .pde)
 # Or, one can specify it via the ARSCONS_TARGET environment
 # variable..
 
@@ -256,7 +256,7 @@ def run(cmd):
         print "Error: return code: " + str(cpe.returncode)
         sys.exit(cpe.returncode)
 
-# WindowXP not supported path.samefile
+# WindowXP does not support 'path.samefile'
 def sameFile(p1, p2):
     if platform == 'win32':
         ap1 = path.abspath(p1)
@@ -339,13 +339,13 @@ def gatherSources(srcpath):
     return [path.join(srcpath, f) for f
             in os.listdir(srcpath) if ptnSource.search(f)]
 
-# add arduino core sources
+# Add Arduino core sources
 VariantDir('build/core', ARDUINO_CORE)
 core_sources = gatherSources(ARDUINO_CORE)
 core_sources = [x.replace(ARDUINO_CORE, 'build/core/') for x
                 in core_sources if path.basename(x) != 'main.cpp']
 
-# add libraries
+# Add libraries
 libCandidates = []
 ptnLib = re.compile(r'^[ ]*#[ ]*include [<"](.*)\.h[>"]')
 for line in open(TARGET + sketchExt):
@@ -389,7 +389,7 @@ local_sources = [x.replace(build_top, 'build/local/') for x in local_sources]
 if local_sources:
     envArduino.Append(CPPPATH = 'build/local')
 
-# Convert sketch(.pde) to cpp
+# Convert sketch(.ino) to cpp
 envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + sketchExt)
 VariantDir('build', '.')
 
