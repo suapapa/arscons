@@ -94,7 +94,7 @@ AVR_HOME_DUDE = None
 if platform == 'darwin':
     # For MacOS X, pick up the AVR tools from within Arduino.app
     ARDUINO_HOME        = resolve_var('ARDUINO_HOME',
-                                      '/Applications/Arduino.app/Contents/Resources/Java')
+                                      '/Applications/Arduino.app/Contents/Java')
     ARDUINO_PORT        = resolve_var('ARDUINO_PORT', getUsbTty('/dev/tty.usbserial*'))
     SKETCHBOOK_HOME     = resolve_var('SKETCHBOOK_HOME', '')
     AVR_HOME            = resolve_var('AVR_HOME',
@@ -129,7 +129,7 @@ if not ARDUINO_HOME:
 
 ARDUINO_CONF = path.join(ARDUINO_HOME, 'hardware/arduino/boards.txt')
 # check given board name, ARDUINO_BOARD is valid one
-arduino_boards = path.join(ARDUINO_HOME,'hardware/*/boards.txt')
+arduino_boards = path.join(ARDUINO_HOME,'hardware/arduino/*/boards.txt')
 custom_boards = path.join(SKETCHBOOK_HOME,'hardware/*/boards.txt')
 board_files = glob(arduino_boards) + glob(custom_boards)
 ptnBoard = re.compile(r'^([^#]*)\.name=(.*)')
@@ -185,7 +185,7 @@ if platform == 'darwin' or platform == 'win32':
 
 AVR_BIN_PREFIX = path.join(AVR_HOME, 'avr-')
 
-ARDUINO_LIBS = [path.join(ARDUINO_HOME, 'libraries')]
+ARDUINO_LIBS = [path.join(ARDUINO_HOME, 'hardware/arduino/avr/libraries')]
 if EXTRA_LIB:
     ARDUINO_LIBS.append(EXTRA_LIB)
 if SKETCHBOOK_HOME:
@@ -235,7 +235,7 @@ envArduino = Environment(CC = AVR_BIN_PREFIX + 'gcc',
                          ASFLAGS = ['-assembler-with-cpp','-mmcu=%s' % MCU],
                          TOOLS = ['gcc','g++', 'as'])
 
-hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/variants',
+hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/avr/variants',
                      getBoardConf("build.variant", ""))
 if hwVariant:
     envArduino.Append(CPPPATH = hwVariant)
@@ -428,9 +428,11 @@ UPLOAD_SPEED = getBoardConf('upload.speed')
 if UPLOAD_PROTOCOL == 'stk500':
     UPLOAD_PROTOCOL = 'stk500v1'
 
+def shellquote(s):
+    return "'" + s.replace("'", "'\\''") + "'"
 
 avrdudeOpts = ['-V', '-F', '-c %s' % UPLOAD_PROTOCOL, '-b %s' % UPLOAD_SPEED,
-               '-p %s' % MCU, '-P %s' % ARDUINO_PORT, '-U flash:w:$SOURCES']
+               '-p %s' % MCU, '-P %s' % shellquote(ARDUINO_PORT), '-U flash:w:$SOURCES']
 if AVRDUDE_CONF:
     avrdudeOpts.append('-C %s' % AVRDUDE_CONF)
 
