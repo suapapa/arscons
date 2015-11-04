@@ -244,8 +244,8 @@ envArduino = Environment(CC=AVR_BIN_PREFIX + 'gcc',
                          ASFLAGS=['-assembler-with-cpp', '-mmcu=%s' % MCU],
                          TOOLS=['gcc', 'g++', 'as'])
 
-hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/avr/variants',
-                     getBoardConf("build.variant", ""))
+hwVariant = path.join(ARDUINO_HOME, 'hardware/arduino/variants',
+                     getBoardConf("build.variant", "standard"))
 if hwVariant:
     envArduino.Append(CPPPATH=hwVariant)
 
@@ -406,14 +406,14 @@ envArduino.Processing('build/' + TARGET + '.cpp', 'build/' + TARGET + sketchExt)
 VariantDir('build', '.')
 
 sources = ['build/' + TARGET + '.cpp']
-#sources += core_sources
+sources += core_sources
 sources += local_sources
 sources += all_libs_sources
 
 # Finally Build!!
-core_objs = envArduino.Object(core_sources)
-objs = envArduino.Object(sources)  # LIBS=libs, LIBPATH='.')
-objs = objs + envArduino.CompressCore('build/core.a', core_objs)
+#core_objs = envArduino.Object(core_sources)
+objs = envArduino.Object(sources)
+#objs = objs + envArduino.CompressCore('build/core.a', core_objs)
 envArduino.Elf(TARGET + '.elf', objs)
 envArduino.Hex(TARGET + '.hex', TARGET + '.elf')
 envArduino.BuildInfo(None, TARGET + '.hex')
