@@ -1,3 +1,5 @@
+**!!DEPRECATED!! This repo is not maintained over 8 years! Recommand to use [arduino-cli](https://github.com/arduino/arduino-cli)** 
+
 # Arscons : scons script for Arduino
 
 build & upload Arduino sketch on the command line with scons!
